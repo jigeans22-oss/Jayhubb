@@ -207,12 +207,12 @@ end
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Exunys Aimbot V3",
-   LoadingTitle = "Exunys Aimbot",
-   LoadingSubtitle = "by Exunys",
+   Name = "Haxzo's",
+   LoadingTitle = "Haxzo aimbot",
+   LoadingSubtitle = "by Haxzo",
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = "ExunysAimbot",
+      FolderName = "Haxzoaimbot",
       FileName = "Configuration"
    },
    Discord = {
