@@ -202,360 +202,396 @@ local GetClosestPlayer = function()
 	end
 end
 
---// Rayfield GUI Implementation
+--// TXID UI Library Implementation
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/WeebsMain/txid-ui-library/refs/heads/main/UI.lua"))()
 
-local Window = Rayfield:CreateWindow({
-   Name = "Haxzo's",
-   LoadingTitle = "Haxzo aimbot",
-   LoadingSubtitle = "by Haxzo",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "Haxzoaimbot",
-      FileName = "Configuration"
-   },
-   Discord = {
-      Enabled = false,
-      Invite = "noinvitelink",
-      RememberJoins = true
-   },
-   KeySystem = false,
-   KeySettings = {
-      Title = "Untitled",
-      Subtitle = "Key System",
-      Note = "No method of obtaining the key is provided",
-      FileName = "Key",
-      SaveKey = true,
-      GrabKeyFromSite = false,
-      Key = {"Hello"}
-   }
+local Window = Library:Window({
+    Name = "KAINO HUB",
+    SubTitle = "KAINO STUDIOS",
+    ExpiresIn = "30d"
 })
 
--- Main Toggle
-local MainToggle = Window:CreateTab("Main", 4483362458)
+local CombatPage = Window:Page({Name = "Combat", Icon = "136879043989014"})
+local VisualsPage = Window:Page({Name = "Visuals", Icon = "136879043989014"})
+local PlayersPage = Window:Page({Name = "Players", Icon = "136879043989014"})
+local MiscPage = Window:Page({Name = "Misc", Icon = "136879043989014"})
 
-local AimbotToggle = MainToggle:CreateToggle({
-   Name = "Enable Aimbot",
-   CurrentValue = Environment.Settings.Enabled,
-   Flag = "AimbotEnabled",
-   Callback = function(Value)
-      Environment.Settings.Enabled = Value
-   end,
+local AimbotSubPage = CombatPage:SubPage({Name = "Aimbot", Columns = 2})
+local VisualsSubPage = VisualsPage:SubPage({Name = "FOV Settings", Columns = 2})
+local PlayersSubPage = PlayersPage:SubPage({Name = "Player Management", Columns = 1})
+local SettingsSubPage = MiscPage:SubPage({Name = "Configuration", Columns = 1})
+
+-- Combat Page - Aimbot Section
+local MainSection = AimbotSubPage:Section({
+    Name = "Main",
+    Icon = "136879043989014",
+    Side = 1
 })
 
-local FOVToggle = MainToggle:CreateToggle({
-   Name = "Show FOV Circle",
-   CurrentValue = Environment.FOVSettings.Enabled,
-   Flag = "FOVEnabled",
-   Callback = function(Value)
-      Environment.FOVSettings.Enabled = Value
-      Environment.FOVSettings.Visible = Value
-   end,
+local AimbotSettingsSection = AimbotSubPage:Section({
+    Name = "Settings",
+    Icon = "72732892493295",
+    Side = 2
 })
 
-local TeamCheckToggle = MainToggle:CreateToggle({
-   Name = "Team Check",
-   CurrentValue = Environment.Settings.TeamCheck,
-   Flag = "TeamCheck",
-   Callback = function(Value)
-      Environment.Settings.TeamCheck = Value
-   end,
+-- Main Aimbot Toggle with Keybind and Colorpicker
+local AimbotToggle = MainSection:Toggle({
+    Name = "Enable Aimbot",
+    Flag = "Aimbot_Enabled",
+    Default = Environment.Settings.Enabled,
+    Callback = function(Value)
+        Environment.Settings.Enabled = Value
+    end
 })
 
-local WallCheckToggle = MainToggle:CreateToggle({
-   Name = "Wall Check",
-   CurrentValue = Environment.Settings.WallCheck,
-   Flag = "WallCheck",
-   Callback = function(Value)
-      Environment.Settings.WallCheck = Value
-   end,
+AimbotToggle:Colorpicker({
+    Flag = "Aimbot_Status_Color",
+    Default = Color3.fromRGB(0, 255, 0),
+    Callback = function(Color)
+        -- Status color for enabled state
+    end
 })
 
-local AliveCheckToggle = MainToggle:CreateToggle({
-   Name = "Alive Check",
-   CurrentValue = Environment.Settings.AliveCheck,
-   Flag = "AliveCheck",
-   Callback = function(Value)
-      Environment.Settings.AliveCheck = Value
-   end,
+AimbotToggle:Keybind({
+    Flag = "Aimbot_Keybind",
+    Default = Enum.KeyCode.E,
+    Mode = "Toggle",
+    Callback = function(Key)
+        Environment.Settings.TriggerKey = Key
+    end
 })
 
-local ToggleMode = MainToggle:CreateToggle({
-   Name = "Toggle Mode",
-   CurrentValue = Environment.Settings.Toggle,
-   Flag = "ToggleMode",
-   Callback = function(Value)
-      Environment.Settings.Toggle = Value
-   end,
+-- FOV Toggle
+local FOVToggle = MainSection:Toggle({
+    Name = "Show FOV Circle",
+    Flag = "FOV_Enabled",
+    Default = Environment.FOVSettings.Enabled,
+    Callback = function(Value)
+        Environment.FOVSettings.Enabled = Value
+        Environment.FOVSettings.Visible = Value
+    end
 })
 
--- Settings Tab
-local SettingsTab = Window:CreateTab("Settings", 4483362458)
-
-local FOVSlider = SettingsTab:CreateSlider({
-   Name = "FOV Radius",
-   Range = {1, 500},
-   Increment = 1,
-   Suffix = "px",
-   CurrentValue = Environment.FOVSettings.Radius,
-   Flag = "FOVRadius",
-   Callback = function(Value)
-      Environment.FOVSettings.Radius = Value
-   end,
+-- Team Check
+local TeamCheckToggle = MainSection:Toggle({
+    Name = "Team Check",
+    Flag = "Team_Check",
+    Default = Environment.Settings.TeamCheck,
+    Callback = function(Value)
+        Environment.Settings.TeamCheck = Value
+    end
 })
 
-local SensitivitySlider = SettingsTab:CreateSlider({
-   Name = "Smoothness",
-   Range = {0, 10},
-   Increment = 0.1,
-   Suffix = "s",
-   CurrentValue = Environment.Settings.Sensitivity,
-   Flag = "Sensitivity",
-   Callback = function(Value)
-      Environment.Settings.Sensitivity = Value
-   end,
+-- Wall Check
+local WallCheckToggle = MainSection:Toggle({
+    Name = "Wall Check",
+    Flag = "Wall_Check",
+    Default = Environment.Settings.WallCheck,
+    Callback = function(Value)
+        Environment.Settings.WallCheck = Value
+    end
 })
 
-local MouseSensitivitySlider = SettingsTab:CreateSlider({
-   Name = "Mouse Sensitivity",
-   Range = {0.1, 10},
-   Increment = 0.1,
-   Suffix = "x",
-   CurrentValue = Environment.Settings.Sensitivity2,
-   Flag = "MouseSensitivity",
-   Callback = function(Value)
-      Environment.Settings.Sensitivity2 = Value
-   end,
+-- Alive Check
+local AliveCheckToggle = MainSection:Toggle({
+    Name = "Alive Check",
+    Flag = "Alive_Check",
+    Default = Environment.Settings.AliveCheck,
+    Callback = function(Value)
+        Environment.Settings.AliveCheck = Value
+    end
 })
 
-local LockPartDropdown = SettingsTab:CreateDropdown({
-   Name = "Aim Part",
-   Options = {"Head", "HumanoidRootPart", "Torso", "LeftHand", "RightHand"},
-   CurrentOption = Environment.Settings.LockPart,
-   Flag = "LockPart",
-   Callback = function(Option)
-      Environment.Settings.LockPart = Option
-   end,
+-- Toggle Mode
+local ToggleMode = MainSection:Toggle({
+    Name = "Toggle Mode",
+    Flag = "Toggle_Mode",
+    Default = Environment.Settings.Toggle,
+    Callback = function(Value)
+        Environment.Settings.Toggle = Value
+    end
 })
 
-local LockModeDropdown = SettingsTab:CreateDropdown({
-   Name = "Aim Mode",
-   Options = {"CFrame", "Mouse"},
-   CurrentOption = Environment.Settings.LockMode == 1 and "CFrame" or "Mouse",
-   Flag = "LockMode",
-   Callback = function(Option)
-      Environment.Settings.LockMode = Option == "CFrame" and 1 or 2
-   end,
+-- Aimbot Settings Section
+local FOVSlider = AimbotSettingsSection:Slider({
+    Name = "FOV Radius",
+    Flag = "FOV_Radius",
+    Min = 1,
+    Max = 500,
+    Default = Environment.FOVSettings.Radius,
+    Decimals = 0,
+    Suffix = "px",
+    Callback = function(Value)
+        Environment.FOVSettings.Radius = Value
+    end
 })
 
-local TriggerKeyDropdown = SettingsTab:CreateDropdown({
-   Name = "Trigger Key",
-   Options = {"MouseButton2", "LeftShift", "LeftControl", "Q", "E", "F"},
-   CurrentOption = "MouseButton2",
-   Flag = "TriggerKey",
-   Callback = function(Option)
-      Environment.Settings.TriggerKey = Option == "MouseButton2" and Enum.UserInputType.MouseButton2 or Enum.KeyCode[Option]
-   end,
+local SmoothnessSlider = AimbotSettingsSection:Slider({
+    Name = "Smoothness",
+    Flag = "Smoothness",
+    Min = 0,
+    Max = 10,
+    Default = Environment.Settings.Sensitivity,
+    Decimals = 1,
+    Suffix = "s",
+    Callback = function(Value)
+        Environment.Settings.Sensitivity = Value
+    end
 })
 
--- Visuals Tab
-local VisualsTab = Window:CreateTab("Visuals", 4483362458)
-
-local FOVColorPicker = VisualsTab:CreateColorPicker({
-   Name = "FOV Color",
-   Color = Environment.FOVSettings.Color,
-   Flag = "FOVColor",
-   Callback = function(Value)
-      Environment.FOVSettings.Color = Value
-   end
+local MouseSensitivitySlider = AimbotSettingsSection:Slider({
+    Name = "Mouse Sensitivity",
+    Flag = "Mouse_Sensitivity",
+    Min = 0.1,
+    Max = 10,
+    Default = Environment.Settings.Sensitivity2,
+    Decimals = 1,
+    Suffix = "x",
+    Callback = function(Value)
+        Environment.Settings.Sensitivity2 = Value
+    end
 })
 
-local LockedColorPicker = VisualsTab:CreateColorPicker({
-   Name = "Locked Color",
-   Color = Environment.FOVSettings.LockedColor,
-   Flag = "LockedColor",
-   Callback = function(Value)
-      Environment.FOVSettings.LockedColor = Value
-   end
+local LockPartDropdown = AimbotSettingsSection:Dropdown({
+    Name = "Aim Part",
+    Flag = "Aim_Part",
+    Items = {"Head", "HumanoidRootPart", "Torso", "LeftHand", "RightHand"},
+    Default = Environment.Settings.LockPart,
+    Multi = false,
+    Callback = function(Value)
+        Environment.Settings.LockPart = Value
+    end
 })
 
-local OutlineColorPicker = VisualsTab:CreateColorPicker({
-   Name = "Outline Color",
-   Color = Environment.FOVSettings.OutlineColor,
-   Flag = "OutlineColor",
-   Callback = function(Value)
-      Environment.FOVSettings.OutlineColor = Value
-   end
+local LockModeDropdown = AimbotSettingsSection:Dropdown({
+    Name = "Aim Mode",
+    Flag = "Aim_Mode",
+    Items = {"CFrame", "Mouse"},
+    Default = Environment.Settings.LockMode == 1 and "CFrame" or "Mouse",
+    Multi = false,
+    Callback = function(Value)
+        Environment.Settings.LockMode = Value == "CFrame" and 1 or 2
+    end
 })
 
-local RainbowFOVToggle = VisualsTab:CreateToggle({
-   Name = "Rainbow FOV",
-   CurrentValue = Environment.FOVSettings.RainbowColor,
-   Flag = "RainbowFOV",
-   Callback = function(Value)
-      Environment.FOVSettings.RainbowColor = Value
-   end,
+-- Visuals Page - FOV Settings
+local FOVColorsSection = VisualsSubPage:Section({
+    Name = "Colors",
+    Icon = "136879043989014",
+    Side = 1
 })
 
-local RainbowOutlineToggle = VisualsTab:CreateToggle({
-   Name = "Rainbow Outline",
-   CurrentValue = Environment.FOVSettings.RainbowOutlineColor,
-   Flag = "RainbowOutline",
-   Callback = function(Value)
-      Environment.FOVSettings.RainbowOutlineColor = Value
-   end,
+local FOVAppearanceSection = VisualsSubPage:Section({
+    Name = "Appearance",
+    Icon = "72732892493295",
+    Side = 2
 })
 
-local FOVThicknessSlider = VisualsTab:CreateSlider({
-   Name = "FOV Thickness",
-   Range = {1, 10},
-   Increment = 1,
-   Suffix = "px",
-   CurrentValue = Environment.FOVSettings.Thickness,
-   Flag = "FOVThickness",
-   Callback = function(Value)
-      Environment.FOVSettings.Thickness = Value
-   end,
+-- FOV Colors
+local FOVColorPicker = FOVColorsSection:Colorpicker({
+    Name = "FOV Color",
+    Flag = "FOV_Color",
+    Default = Environment.FOVSettings.Color,
+    Callback = function(Color)
+        Environment.FOVSettings.Color = Color
+    end
 })
 
-local FOVTransparencySlider = VisualsTab:CreateSlider({
-   Name = "FOV Transparency",
-   Range = {0, 1},
-   Increment = 0.1,
-   Suffix = "",
-   CurrentValue = Environment.FOVSettings.Transparency,
-   Flag = "FOVTransparency",
-   Callback = function(Value)
-      Environment.FOVSettings.Transparency = Value
-   end,
+local LockedColorPicker = FOVColorsSection:Colorpicker({
+    Name = "Locked Color",
+    Flag = "Locked_Color",
+    Default = Environment.FOVSettings.LockedColor,
+    Callback = function(Color)
+        Environment.FOVSettings.LockedColor = Color
+    end
 })
 
--- Player Management Tab
-local PlayersTab = Window:CreateTab("Players", 4483362458)
-
-local BlacklistSection = PlayersTab:CreateSection("Blacklist Management")
-
-local PlayerDropdown = PlayersTab:CreateDropdown({
-   Name = "Select Player",
-   Options = {},
-   CurrentOption = "",
-   Flag = "PlayerSelect",
-   Callback = function(Option)
-      -- Store selected player
-   end,
+local OutlineColorPicker = FOVColorsSection:Colorpicker({
+    Name = "Outline Color",
+    Flag = "Outline_Color",
+    Default = Environment.FOVSettings.OutlineColor,
+    Callback = function(Color)
+        Environment.FOVSettings.OutlineColor = Color
+    end
 })
 
-local function UpdatePlayerList()
-   local players = {}
-   for _, player in next, GetPlayers(Players) do
-      if player ~= LocalPlayer then
-         table.insert(players, player.Name)
-      end
-   end
-   Rayfield:UpdateDropdown("PlayerSelect", players, "")
+-- Rainbow Toggles
+local RainbowFOVToggle = FOVColorsSection:Toggle({
+    Name = "Rainbow FOV",
+    Flag = "Rainbow_FOV",
+    Default = Environment.FOVSettings.RainbowColor,
+    Callback = function(Value)
+        Environment.FOVSettings.RainbowColor = Value
+    end
+})
+
+local RainbowOutlineToggle = FOVColorsSection:Toggle({
+    Name = "Rainbow Outline",
+    Flag = "Rainbow_Outline",
+    Default = Environment.FOVSettings.RainbowOutlineColor,
+    Callback = function(Value)
+        Environment.FOVSettings.RainbowOutlineColor = Value
+    end
+})
+
+-- FOV Appearance
+local FOVThicknessSlider = FOVAppearanceSection:Slider({
+    Name = "FOV Thickness",
+    Flag = "FOV_Thickness",
+    Min = 1,
+    Max = 10,
+    Default = Environment.FOVSettings.Thickness,
+    Decimals = 0,
+    Suffix = "px",
+    Callback = function(Value)
+        Environment.FOVSettings.Thickness = Value
+    end
+})
+
+local FOVTransparencySlider = FOVAppearanceSection:Slider({
+    Name = "FOV Transparency",
+    Flag = "FOV_Transparency",
+    Min = 0,
+    Max = 1,
+    Default = Environment.FOVSettings.Transparency,
+    Decimals = 1,
+    Suffix = "",
+    Callback = function(Value)
+        Environment.FOVSettings.Transparency = Value
+    end
+})
+
+local FOVSidesSlider = FOVAppearanceSection:Slider({
+    Name = "FOV Sides",
+    Flag = "FOV_Sides",
+    Min = 3,
+    Max = 100,
+    Default = Environment.FOVSettings.NumSides,
+    Decimals = 0,
+    Suffix = "",
+    Callback = function(Value)
+        Environment.FOVSettings.NumSides = Value
+    end
+})
+
+-- Players Page - Player Management
+local BlacklistSection = PlayersSubPage:Section({
+    Name = "Blacklist Management",
+    Icon = "136879043989014",
+    Side = 1
+})
+
+-- Player list for blacklisting
+local playerList = {}
+for _, player in next, GetPlayers(Players) do
+    if player ~= LocalPlayer then
+        table.insert(playerList, player.Name)
+    end
 end
 
-local BlacklistButton = PlayersTab:CreateButton({
-   Name = "Blacklist Selected",
-   Callback = function()
-      local selected = Rayfield.Flags["PlayerSelect"]
-      if selected and selected ~= "" then
-         Environment:Blacklist(selected)
-         Rayfield:Notify({
-            Title = "Blacklist",
-            Content = "Added " .. selected .. " to blacklist",
-            Duration = 3,
-            Image = 4483362458
-         })
-      end
-   end,
+local PlayerDropdown = BlacklistSection:Dropdown({
+    Name = "Select Player",
+    Flag = "Player_Select",
+    Items = playerList,
+    Default = playerList[1] or "",
+    Multi = false,
+    Callback = function(Value)
+        -- Store selected player
+    end
 })
 
-local WhitelistButton = PlayersTab:CreateButton({
-   Name = "Whitelist Selected",
-   Callback = function()
-      local selected = Rayfield.Flags["PlayerSelect"]
-      if selected and selected ~= "" then
-         Environment:Whitelist(selected)
-         Rayfield:Notify({
-            Title = "Blacklist",
-            Content = "Removed " .. selected .. " from blacklist",
-            Duration = 3,
-            Image = 4483362458
-         })
-      end
-   end,
+local BlacklistButton = BlacklistSection:Button({
+    Name = "Blacklist Selected",
+    Callback = function()
+        local selected = Library.Flags.Player_Select
+        if selected and selected ~= "" then
+            Environment:Blacklist(selected)
+            Library:Notification("Added " .. selected .. " to blacklist", 3, "94627324690861")
+        end
+    end
 })
 
-local BlacklistedPlayersLabel = PlayersTab:CreateLabel("Blacklisted Players: None")
+local WhitelistButton = BlacklistSection:Button({
+    Name = "Whitelist Selected",
+    Callback = function()
+        local selected = Library.Flags.Player_Select
+        if selected and selected ~= "" then
+            Environment:Whitelist(selected)
+            Library:Notification("Removed " .. selected .. " from blacklist", 3, "94627324690861")
+        end
+    end
+})
 
-local function UpdateBlacklistDisplay()
-   local blacklisted = Environment.Blacklisted
-   if #blacklisted > 0 then
-      BlacklistedPlayersLabel:Set("Blacklisted Players: " .. table.concat(blacklisted, ", "))
-   else
-      BlacklistedPlayersLabel:Set("Blacklisted Players: None")
-   end
-end
+-- Misc Page - Configuration
+local ConfigSection = SettingsSubPage:Section({
+    Name = "System",
+    Icon = "136879043989014",
+    Side = 1
+})
+
+local SaveConfigButton = ConfigSection:Button({
+    Name = "Save Configuration",
+    Callback = function()
+        Library:Notification("Settings saved!", 3, "94627324690861")
+    end
+})
+
+local LoadConfigButton = ConfigSection:Button({
+    Name = "Load Configuration",
+    Callback = function()
+        Library:Notification("Settings loaded!", 3, "94627324690861")
+    end
+})
+
+local RestartButton = ConfigSection:Button({
+    Name = "Restart Aimbot",
+    Callback = function()
+        Environment:Restart()
+        Library:Notification("Aimbot restarted!", 3, "94627324690861")
+    end
+})
+
+local UnloadButton = ConfigSection:Button({
+    Name = "Unload Aimbot",
+    Callback = function()
+        Environment:Exit()
+        Library:Notification("Aimbot unloaded!", 3, "94627324690861")
+    end
+})
+
+-- Status Label
+local StatusLabel = ConfigSection:Label({
+    Name = "Status: Ready"
+})
+
+-- Update status periodically
+spawn(function()
+    while true do
+        if Environment.Locked then
+            StatusLabel:Set("Status: Locked on " .. (Environment.Locked and Environment.Locked.Name or "None"))
+        else
+            StatusLabel:Set("Status: Searching...")
+        end
+        wait(0.5)
+    end
+end)
 
 -- Update player list periodically
 spawn(function()
-   while true do
-      UpdatePlayerList()
-      UpdateBlacklistDisplay()
-      wait(5)
-   end
+    while true do
+        local players = {}
+        for _, player in next, GetPlayers(Players) do
+            if player ~= LocalPlayer then
+                table.insert(players, player.Name)
+            end
+        end
+        PlayerDropdown:Refresh(players, players[1] or "")
+        wait(5)
+    end
 end)
 
--- Misc Tab
-local MiscTab = Window:CreateTab("Misc", 4483362458)
-
-local SaveConfigButton = MiscTab:CreateButton({
-   Name = "Save Configuration",
-   Callback = function()
-      Rayfield:Notify({
-         Title = "Configuration",
-         Content = "Settings saved!",
-         Duration = 3,
-         Image = 4483362458
-      })
-   end,
-})
-
-local LoadConfigButton = MiscTab:CreateButton({
-   Name = "Load Configuration",
-   Callback = function()
-      Rayfield:Notify({
-         Title = "Configuration",
-         Content = "Settings loaded!",
-         Duration = 3,
-         Image = 4483362458
-      })
-   end,
-})
-
-local UnloadButton = MiscTab:CreateButton({
-   Name = "Unload Aimbot",
-   Callback = function()
-      Environment:Exit()
-      Rayfield:Destroy()
-   end,
-})
-
-local StatusLabel = MiscTab:CreateLabel("Status: Ready")
-
--- Update status
-spawn(function()
-   while true do
-      if Environment.Locked then
-         StatusLabel:Set("Status: Locked on " .. (Environment.Locked and Environment.Locked.Name or "None"))
-      else
-         StatusLabel:Set("Status: Searching...")
-      end
-      wait(0.5)
-   end
-end)
+Library:CreateSettingsPage(Window)
 
 --// Load Function
 
@@ -686,27 +722,27 @@ function Environment.Restart()
 end
 
 function Environment.Blacklist(self, Username)
-	assert(self, "EXUNYS_AIMBOT-V3.Blacklist: Missing parameter #1 \"self\" <table>.")
-	assert(Username, "EXUNYS_AIMBOT-V3.Blacklist: Missing parameter #2 \"Username\" <string>.")
+	assert(self, "Haxzo_AIMBOT-V3.Blacklist: Missing parameter #1 \"self\" <table>.")
+	assert(Username, "Haxzo_AIMBOT-V3.Blacklist: Missing parameter #2 \"Username\" <string>.")
 
 	Username = FixUsername(Username)
 
-	assert(self, "EXUNYS_AIMBOT-V3.Blacklist: User "..Username.." couldn't be found.")
+	assert(self, "Haxzo_AIMBOT-V3.Blacklist: User "..Username.." couldn't be found.")
 
 	self.Blacklisted[#self.Blacklisted + 1] = Username
 end
 
 function Environment.Whitelist(self, Username)
-	assert(self, "EXUNYS_AIMBOT-V3.Whitelist: Missing parameter #1 \"self\" <table>.")
-	assert(Username, "EXUNYS_AIMBOT-V3.Whitelist: Missing parameter #2 \"Username\" <string>.")
+	assert(self, "Haxzo_AIMBOT-V3.Whitelist: Missing parameter #1 \"self\" <table>.")
+	assert(Username, "Haxzo_AIMBOT-V3.Whitelist: Missing parameter #2 \"Username\" <string>.")
 
 	Username = FixUsername(Username)
 
-	assert(Username, "EXUNYS_AIMBOT-V3.Whitelist: User "..Username.." couldn't be found.")
+	assert(Username, "Haxzo_AIMBOT-V3.Whitelist: User "..Username.." couldn't be found.")
 
 	local Index = tablefind(self.Blacklisted, Username)
 
-	assert(Index, "EXUNYS_AIMBOT-V3.Whitelist: User "..Username.." is not blacklisted.")
+	assert(Index, "Haxzo_AIMBOT-V3.Whitelist: User "..Username.." is not blacklisted.")
 
 	tableremove(self.Blacklisted, Index)
 end
@@ -726,11 +762,6 @@ setmetatable(Environment, {__call = Load})
 -- Initialize the aimbot
 Environment:Load()
 
-Rayfield:Notify({
-   Title = "Exunys Aimbot V3",
-   Content = "Successfully loaded!",
-   Duration = 5,
-   Image = 4483362458
-})
+Library:Notification("Haxzo's Aimbot loaded successfully!", 5, "94627324690861")
 
 return Environment
