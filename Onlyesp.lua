@@ -2,9 +2,9 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/WeebsMain/txid-ui-library/refs/heads/main/UI.lua"))()
 
 local Window = Library:Window({
-    Name = "Ultimate Hub",
-    SubTitle = "v2.0 Beta",
-    ExpiresIn = "30d"
+    Name = "Kainohub",
+    SubTitle = "By Haxzo",
+    ExpiresIn = "3y"
 })
 
 ---------------------------------------------------------
