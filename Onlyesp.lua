@@ -1,273 +1,142 @@
---// Load UI Library
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/WeebsMain/txid-ui-library/refs/heads/main/UI.lua"))()
-
-local Window = Library:Window({
-    Name = "Kainohub",
-    SubTitle = "By Haxzo",
-    ExpiresIn = "3y"
-})
-
----------------------------------------------------------
--- Pages / Subpages
----------------------------------------------------------
-
-local CombatPage = Window:Page({Name = "Combat", Icon = "136879043989014"})
-local VisualsPage = Window:Page({Name = "Visuals", Icon = "136879043989014"})
-
-local AimbotPage = CombatPage:SubPage({Name = "Aimbot", Columns = 2})
-local ESPPage = VisualsPage:SubPage({Name = "ESP", Columns = 2})
-
----------------------------------------------------------
--- Services
----------------------------------------------------------
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
----------------------------------------------------------
--- Variables
----------------------------------------------------------
+-- Load UI Library
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/WeebsMain/txid-ui-library/refs/heads/main/UI.lua"))()
 
-local AimbotEnabled = false
-local SilentAimEnabled = false
-local ESPEnabled = false
-
-local TargetPart = "Head"
-local FOV = 90
-local FOVColor = Color3.fromRGB(255,255,255)
-
----------------------------------------------------------
--- FOV Circle (Drawing API)
----------------------------------------------------------
-
-local Circle = Drawing.new("Circle")
-Circle.Filled = false
-Circle.Thickness = 2
-Circle.NumSides = 60
-Circle.Radius = FOV
-Circle.Visible = false
-Circle.Color = FOVColor
+-- Smaller Mobile-Friendly Window
+local Window = Library:Window({
+    Name = "KAINO HUB",
+    SubTitle = "BY KAINO STUDIOS",
+    ExpiresIn = "30d",
+    Size = UDim2.new(0, 420, 0, 320) -- Mobile-friendly size
+})
 
 ---------------------------------------------------------
--- Functions
+-- PAGES
 ---------------------------------------------------------
+local CombatPage = Window:Page({Name = "Combat", Icon = "136879043989014"})
+local VisualsPage = Window:Page({Name = "Visuals", Icon = "136879043989014"})
+local MiscPage = Window:Page({Name = "Misc", Icon = "136879043989014"})
 
-local function getClosestTarget()
-    local closest = nil
-    local mouse = UIS:GetMouseLocation()
-    local shortest = Circle.Radius
+---------------------------------------------------------
+-- SUBPAGES / SECTIONS
+---------------------------------------------------------
+local CombatMain = CombatPage:SubPage({Name = "Main", Columns = 2})
+local VisualMain = VisualsPage:SubPage({Name = "Main", Columns = 2})
+local MiscMain = MiscPage:SubPage({Name = "Main", Columns = 2})
 
-    for _,player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(TargetPart) then
-            local char = player.Character
-            local head = char:FindFirstChild(TargetPart)
-            local human = char:FindFirstChild("Humanoid")
+local CSection = CombatMain:Section({Name = "Combat Options", Icon = "136879043989014", Side = 1})
+local VSection = VisualMain:Section({Name = "Visual Options", Icon = "136879043989014", Side = 1})
+local MSection = MiscMain:Section({Name = "Misc Options", Icon = "136879043989014", Side = 1})
 
-            if head and human and human.Health > 0 then
-                local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                if onScreen then
-                    local dist = (Vector2.new(pos.X,pos.Y) - mouse).Magnitude
-                    if dist < shortest then
-                        shortest = dist
-                        closest = player
-                    end
-                end
+---------------------------------------------------------
+-- GOD MODE FUNCTION
+---------------------------------------------------------
+local godModeEnabled = false
+local godModeConnection
+
+local function enableGodMode(player)
+    if not player or not player.Character then return end
+    local humanoid = player.Character:FindFirstChild("Humanoid")
+    if humanoid then
+        humanoid.MaxHealth = math.huge
+        humanoid.Health = math.huge
+
+        -- Disconnect previous connection if exists
+        if godModeConnection then godModeConnection:Disconnect() end
+
+        godModeConnection = humanoid.HealthChanged:Connect(function()
+            if godModeEnabled and humanoid.Health < humanoid.MaxHealth then
+                humanoid.Health = humanoid.MaxHealth
             end
-        end
+        end)
     end
-    return closest
 end
 
 ---------------------------------------------------------
--- Silent Aim Hook
+-- UI ELEMENTS
 ---------------------------------------------------------
-
-local mt = getrawmetatable(game)
-setreadonly(mt, false)
-local old = mt.__index
-
-mt.__index = newcclosure(function(self,key)
-    if SilentAimEnabled and key == "Hit" and self == Camera then
-        local target = getClosestTarget()
-        if target and target.Character and target.Character:FindFirstChild(TargetPart) then
-            return target.Character[TargetPart]
-        end
-    end
-    return old(self,key)
-end)
-
-setreadonly(mt, true)
-
----------------------------------------------------------
--- Aimbot Loop
----------------------------------------------------------
-
-RunService.RenderStepped:Connect(function()
-    Circle.Position = UIS:GetMouseLocation()
-
-    if AimbotEnabled then
-        local target = getClosestTarget()
-        if target and target.Character and target.Character:FindFirstChild(TargetPart) then
-            local pos = target.Character[TargetPart].Position
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, pos)
-        end
-    end
-end)
-
----------------------------------------------------------
--- ESP System
----------------------------------------------------------
-
-local ESPFolder = Instance.new("Folder", game.CoreGui)
-ESPFolder.Name = "UltimateESP"
-
-local function createESP(player)
-    local box = Instance.new("BoxHandleAdornment")
-    box.Size = Vector3.new(4,6,4)
-    box.Color3 = Color3.new(1,0,0)
-    box.Transparency = 0.6
-    box.ZIndex = 5
-    box.AlwaysOnTop = true
-    box.Visible = false
-    box.Parent = ESPFolder
-
-    RunService.Heartbeat:Connect(function()
-        if ESPEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local hrp = player.Character.HumanoidRootPart
-            local hum = player.Character:FindFirstChild("Humanoid")
-
-            if hum and hum.Health > 0 then
-                box.Adornee = hrp
-                box.Visible = true
-            else
-                box.Visible = false
-            end
-        else
-            box.Visible = false
-        end
-    end)
-end
-
-for _,p in ipairs(Players:GetPlayers()) do
-    if p ~= LocalPlayer then createESP(p) end
-end
-
-Players.PlayerAdded:Connect(createESP)
-
----------------------------------------------------------
--- UI Elements
----------------------------------------------------------
-
--- Aimbot
-local AimbotMain = AimbotPage:Section({Name = "Main", Side = 1})
-local AimbotSettings = AimbotPage:Section({Name = "Settings", Side = 2})
-
-AimbotMain:Toggle({
-    Name = "Enable Aimbot",
-    Flag = "AimbotEnabled",
+CSection:Toggle({
+    Name = "God Mode",
+    Flag = "GodMode_Toggle",
     Default = false,
     Callback = function(v)
-        AimbotEnabled = v
-        SilentAimEnabled = false
+        godModeEnabled = v
+        if godModeEnabled then
+            enableGodMode(LocalPlayer)
+        elseif godModeConnection then
+            godModeConnection:Disconnect()
+            godModeConnection = nil
+        end
     end
 })
 
-AimbotMain:Toggle({
-    Name = "Silent Aim",
-    Flag = "SilentAim",
+-- Placeholder Toggles
+CSection:Toggle({
+    Name = "Combat Feature",
+    Flag = "Combat_Toggle",
     Default = false,
-    Callback = function(v)
-        SilentAimEnabled = v
-        AimbotEnabled = false
-    end
+    Callback = function(v) print("Combat Feature:", v) end
 })
 
-AimbotSettings:Slider({
-    Name = "FOV",
-    Flag = "FOV",
-    Min = 10,
-    Max = 300,
-    Default = 90,
-    Callback = function(v)
-        FOV = v
-        Circle.Radius = v
-    end
+CSection:Slider({
+    Name = "Combat Strength",
+    Flag = "Combat_Slider",
+    Min = 0,
+    Max = 100,
+    Default = 50,
+    Callback = function(v) print("Combat Strength:", v) end
 })
 
-AimbotSettings:Dropdown({
-    Name = "Target Part",
-    Items = {"Head","HumanoidRootPart","Torso"},
-    Default = "Head",
-    Callback = function(v)
-        TargetPart = v
-    end
-})
-
-AimbotSettings:Toggle({
-    Name = "Show FOV Circle",
-    Default = true,
-    Callback = function(v)
-        Circle.Visible = v
-    end
-})
-
-AimbotMain:Colorpicker({
-    Name = "FOV Color",
-    Default = Color3.fromRGB(255,255,255),
-    Callback = function(c)
-        FOVColor = c
-        Circle.Color = c
-    end
-})
-
--- ESP
-local ESPSection = ESPPage:Section({Name = "ESP", Side = 1})
-
-ESPSection:Toggle({
-    Name = "Enable ESP",
+VSection:Toggle({
+    Name = "Visual Feature",
+    Flag = "Visual_Toggle",
     Default = false,
-    Callback = function(v)
-        ESPEnabled = v
-    end
+    Callback = function(v) print("Visual Feature:", v) end
 })
+
+MSection:Dropdown({
+    Name = "Mode",
+    Flag = "Mode_Drop",
+    Items = {"Normal", "Advanced", "Experimental"},
+    Default = "Normal",
+    Callback = function(v) print("Mode Selected:", v) end
+})
+
+Library:CreateSettingsPage(Window)
+
+Library:Notification("UI Loaded Successfully!", 5, "94627324690861")
 
 ---------------------------------------------------------
 -- MOBILE UI TOGGLE BUTTON
 ---------------------------------------------------------
-
 local function isMobile()
     return UIS.TouchEnabled and not UIS.KeyboardEnabled
 end
 
 if isMobile() then
     local ScreenGui = Instance.new("ScreenGui")
-    local ToggleButton = Instance.new("TextButton")
-
     ScreenGui.Name = "MobileToggleUI"
     ScreenGui.Parent = game.CoreGui
 
-    ToggleButton.Parent = ScreenGui
-    ToggleButton.Size = UDim2.new(0, 70, 0, 70)
-    ToggleButton.Position = UDim2.new(0.05, 0, 0.4, 0)
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
-    ToggleButton.Text = "UI"
-    ToggleButton.TextColor3 = Color3.new(1,1,1)
-    ToggleButton.TextScaled = true
-    ToggleButton.BorderSizePixel = 0
-    ToggleButton.BackgroundTransparency = 0.2
-    ToggleButton.Active = true
-    ToggleButton.Draggable = true
-    ToggleButton.ZIndex = 9999999
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Parent = ScreenGui
+    ToggleBtn.Size = UDim2.new(0, 70, 0, 70)
+    ToggleBtn.Position = UDim2.new(0.05, 0, 0.4, 0)
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+    ToggleBtn.Text = "UI"
+    ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+    ToggleBtn.TextScaled = true
+    ToggleBtn.BorderSizePixel = 0
+    ToggleBtn.Active = true
+    ToggleBtn.Draggable = true
+    ToggleBtn.ZIndex = 9999999
 
-    -- Toggles the whole UI on mobile
     local uiOpen = true
-
-    ToggleButton.MouseButton1Click:Connect(function()
+    ToggleBtn.MouseButton1Click:Connect(function()
         uiOpen = not uiOpen
-
         for _, gui in ipairs(game.CoreGui:GetChildren()) do
             if gui ~= ScreenGui then
                 gui.Enabled = uiOpen
@@ -275,10 +144,3 @@ if isMobile() then
         end
     end)
 end
-
----------------------------------------------------------
--- Settings Page
----------------------------------------------------------
-Library:CreateSettingsPage(Window)
-
-Library:Notification("Script loaded successfully!", 5, "94627324690861")
