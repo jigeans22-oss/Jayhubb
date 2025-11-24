@@ -1,257 +1,284 @@
---========================================================--
---  JALBIRD DARK-TECH UI (Working Version)
---========================================================--
+--// Load UI Library
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/WeebsMain/txid-ui-library/refs/heads/main/UI.lua"))()
 
---// SERVICES
+local Window = Library:Window({
+    Name = "Ultimate Hub",
+    SubTitle = "v2.0 Beta",
+    ExpiresIn = "30d"
+})
+
+---------------------------------------------------------
+-- Pages / Subpages
+---------------------------------------------------------
+
+local CombatPage = Window:Page({Name = "Combat", Icon = "136879043989014"})
+local VisualsPage = Window:Page({Name = "Visuals", Icon = "136879043989014"})
+
+local AimbotPage = CombatPage:SubPage({Name = "Aimbot", Columns = 2})
+local ESPPage = VisualsPage:SubPage({Name = "ESP", Columns = 2})
+
+---------------------------------------------------------
+-- Services
+---------------------------------------------------------
+
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
 
---// THEME
-local Theme = {
-    Background = Color3.fromRGB(15, 15, 15),
-    Panel = Color3.fromRGB(25, 25, 25),
-    Accent = Color3.fromRGB(0, 150, 255),
-    DarkAccent = Color3.fromRGB(0, 100, 180),
-    Text = Color3.fromRGB(220, 220, 220),
-    Red = Color3.fromRGB(255, 70, 70)
-}
+---------------------------------------------------------
+-- Variables
+---------------------------------------------------------
 
---========================================================--
--- WORKING CUSTOM UI LIBRARY
---========================================================--
+local AimbotEnabled = false
+local SilentAimEnabled = false
+local ESPEnabled = false
 
-local UI = {}
+local TargetPart = "Head"
+local FOV = 90
+local FOVColor = Color3.fromRGB(255,255,255)
 
-function UI:CreateWindow(title)
-    -- ScreenGui FIX
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.IgnoreGuiInset = true
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    ScreenGui.Parent = game:GetService("CoreGui")
-    ScreenGui.Name = "JalbirdDarkTech"
+---------------------------------------------------------
+-- FOV Circle (Drawing API)
+---------------------------------------------------------
 
-    -- MAIN FRAME
-    local MainFrame = Instance.new("Frame", ScreenGui)
-    MainFrame.Size = UDim2.new(0, 450, 0, 350)
-    MainFrame.Position = UDim2.new(0.5, -225, 0.5, -175)
-    MainFrame.BackgroundColor3 = Theme.Background
-    MainFrame.BorderSizePixel = 0
+local Circle = Drawing.new("Circle")
+Circle.Filled = false
+Circle.Thickness = 2
+Circle.NumSides = 60
+Circle.Radius = FOV
+Circle.Visible = false
+Circle.Color = FOVColor
 
-    -- TITLE BAR
-    local TitleBar = Instance.new("Frame", MainFrame)
-    TitleBar.Size = UDim2.new(1, 0, 0, 40)
-    TitleBar.BackgroundColor3 = Theme.Panel
-    TitleBar.BorderSizePixel = 0
+---------------------------------------------------------
+-- Functions
+---------------------------------------------------------
 
-    local Title = Instance.new("TextLabel", TitleBar)
-    Title.Size = UDim2.new(1, -10, 1, 0)
-    Title.Position = UDim2.new(0, 10, 0, 0)
-    Title.Text = "⚙️  " .. title
-    Title.Font = Enum.Font.GothamBold
-    Title.TextColor3 = Theme.Text
-    Title.TextSize = 18
-    Title.BackgroundTransparency = 1
-    Title.TextXAlignment = Enum.TextXAlignment.Left
+local function getClosestTarget()
+    local closest = nil
+    local mouse = UIS:GetMouseLocation()
+    local shortest = Circle.Radius
 
-    -- FULLY WORKING DRAGGING FIX
-    local dragging = false
-    local dragStart, startPos
+    for _,player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(TargetPart) then
+            local char = player.Character
+            local head = char:FindFirstChild(TargetPart)
+            local human = char:FindFirstChild("Humanoid")
 
-    TitleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = MainFrame.Position
-        end
-    end)
-
-    UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-
-    UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-
-
-    -- TAB HOLDER
-    local TabHolder = Instance.new("Frame", MainFrame)
-    TabHolder.Size = UDim2.new(0, 120, 1, -40)
-    TabHolder.Position = UDim2.new(0, 0, 0, 40)
-    TabHolder.BackgroundColor3 = Theme.Panel
-    TabHolder.BorderSizePixel = 0
-
-    -- CONTENT AREA
-    local Content = Instance.new("Frame", MainFrame)
-    Content.Size = UDim2.new(1, -120, 1, -40)
-    Content.Position = UDim2.new(0, 120, 0, 40)
-    Content.BackgroundColor3 = Theme.Background
-    Content.BorderSizePixel = 0
-
-    local Tabs = {}
-
-    function UI:CreateTab(tabName)
-        local TabBtn = Instance.new("TextButton", TabHolder)
-        TabBtn.Size = UDim2.new(1, 0, 0, 38)
-        TabBtn.BackgroundColor3 = Theme.Panel
-        TabBtn.BorderSizePixel = 0
-        TabBtn.Text = tabName
-        TabBtn.Font = Enum.Font.GothamSemibold
-        TabBtn.TextColor3 = Theme.Text
-        TabBtn.TextSize = 15
-
-        local TabFrame = Instance.new("Frame", Content)
-        TabFrame.Size = UDim2.new(1, 0, 1, 0)
-        TabFrame.Visible = false
-        TabFrame.BackgroundTransparency = 1
-
-        Tabs[tabName] = TabFrame
-
-        -- Switch tabs
-        TabBtn.MouseButton1Click:Connect(function()
-            for _, tab in pairs(Tabs) do tab.Visible = false end
-            TabFrame.Visible = true
-        end)
-
-        if #Content:GetChildren() == 1 then
-            TabFrame.Visible = true
-        end
-
-        local function yOffset()
-            return (#TabFrame:GetChildren() * 40)
-        end
-
-        local tabAPI = {}
-
-        function tabAPI:CreateToggle(text, callback)
-            local frame = Instance.new("Frame", TabFrame)
-            frame.Size = UDim2.new(1, -20, 0, 35)
-            frame.Position = UDim2.new(0, 10, 0, yOffset())
-            frame.BackgroundTransparency = 1
-
-            local label = Instance.new("TextLabel", frame)
-            label.Size = UDim2.new(0.7, 0, 1, 0)
-            label.BackgroundTransparency = 1
-            label.Text = text
-            label.Font = Enum.Font.Gotham
-            label.TextSize = 15
-            label.TextColor3 = Theme.Text
-
-            local btn = Instance.new("TextButton", frame)
-            btn.Size = UDim2.new(0.25, 0, 0.7, 0)
-            btn.Position = UDim2.new(0.73, 0, 0.15, 0)
-            btn.BackgroundColor3 = Theme.DarkAccent
-            btn.BorderSizePixel = 0
-            btn.Text = "OFF"
-            btn.TextColor3 = Theme.Text
-            btn.TextSize = 13
-
-            local state = false
-
-            btn.MouseButton1Click:Connect(function()
-                state = not state
-                btn.BackgroundColor3 = state and Theme.Accent or Theme.DarkAccent
-                btn.Text = state and "ON" or "OFF"
-                callback(state)
-            end)
-        end
-
-        function tabAPI:CreateSlider(text, min, max, default, callback)
-            local frame = Instance.new("Frame", TabFrame)
-            frame.Size = UDim2.new(1, -20, 0, 55)
-            frame.Position = UDim2.new(0, 10, 0, yOffset())
-            frame.BackgroundTransparency = 1
-
-            local label = Instance.new("TextLabel", frame)
-            label.Size = UDim2.new(1, 0, 0, 22)
-            label.BackgroundTransparency = 1
-            label.Text = text .. ": " .. default
-            label.Font = Enum.Font.Gotham
-            label.TextColor3 = Theme.Text
-            label.TextSize = 15
-
-            local bar = Instance.new("Frame", frame)
-            bar.Size = UDim2.new(1, 0, 0, 10)
-            bar.Position = UDim2.new(0, 0, 0.6, 0)
-            bar.BackgroundColor3 = Theme.Panel
-            bar.BorderSizePixel = 0
-
-            local drag = Instance.new("Frame", bar)
-            drag.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-            drag.BackgroundColor3 = Theme.Accent
-            drag.BorderSizePixel = 0
-
-            local mouseDown = false
-
-            bar.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    mouseDown = true
+            if head and human and human.Health > 0 then
+                local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local dist = (Vector2.new(pos.X,pos.Y) - mouse).Magnitude
+                    if dist < shortest then
+                        shortest = dist
+                        closest = player
+                    end
                 end
-            end)
-
-            UIS.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    mouseDown = false
-                end
-            end)
-
-            UIS.InputChanged:Connect(function(input)
-                if mouseDown and input.UserInputType == Enum.UserInputType.MouseMovement then
-                    local pct = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-                    drag.Size = UDim2.new(pct, 0, 1, 0)
-                    local val = math.floor(min + pct * (max - min))
-                    label.Text = text .. ": " .. val
-                    callback(val)
-                end
-            end)
+            end
         end
-
-        return tabAPI
     end
-
-    return UI
+    return closest
 end
 
---========================================================--
---   NOW GUI WILL ALWAYS LOAD — CREATE THE REAL UI
---========================================================--
+---------------------------------------------------------
+-- Silent Aim Hook
+---------------------------------------------------------
 
-local window = UI:CreateWindow("Jalbird Dark-Tech")
+local mt = getrawmetatable(game)
+setreadonly(mt, false)
+local old = mt.__index
 
-local Main = window:CreateTab("Main")
-local Settings = window:CreateTab("Settings")
-
-_G.ESP = false
-_G.Aim = false
-_G.Silent = false
-_G.FOV = 100
-
-Main:CreateToggle("ESP", function(v)
-    _G.ESP = v
+mt.__index = newcclosure(function(self,key)
+    if SilentAimEnabled and key == "Hit" and self == Camera then
+        local target = getClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild(TargetPart) then
+            return target.Character[TargetPart]
+        end
+    end
+    return old(self,key)
 end)
 
-Main:CreateToggle("Aimbot", function(v)
-    _G.Aim = v
+setreadonly(mt, true)
+
+---------------------------------------------------------
+-- Aimbot Loop
+---------------------------------------------------------
+
+RunService.RenderStepped:Connect(function()
+    Circle.Position = UIS:GetMouseLocation()
+
+    if AimbotEnabled then
+        local target = getClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild(TargetPart) then
+            local pos = target.Character[TargetPart].Position
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, pos)
+        end
+    end
 end)
 
-Main:CreateToggle("Silent Aim", function(v)
-    _G.Silent = v
-end)
+---------------------------------------------------------
+-- ESP System
+---------------------------------------------------------
 
-Settings:CreateSlider("FOV", 50, 300, 100, function(v)
-    _G.FOV = v
-end)
+local ESPFolder = Instance.new("Folder", game.CoreGui)
+ESPFolder.Name = "UltimateESP"
 
-print("Jalbird Dark-Tech GUI Loaded ✔")
+local function createESP(player)
+    local box = Instance.new("BoxHandleAdornment")
+    box.Size = Vector3.new(4,6,4)
+    box.Color3 = Color3.new(1,0,0)
+    box.Transparency = 0.6
+    box.ZIndex = 5
+    box.AlwaysOnTop = true
+    box.Visible = false
+    box.Parent = ESPFolder
+
+    RunService.Heartbeat:Connect(function()
+        if ESPEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = player.Character.HumanoidRootPart
+            local hum = player.Character:FindFirstChild("Humanoid")
+
+            if hum and hum.Health > 0 then
+                box.Adornee = hrp
+                box.Visible = true
+            else
+                box.Visible = false
+            end
+        else
+            box.Visible = false
+        end
+    end)
+end
+
+for _,p in ipairs(Players:GetPlayers()) do
+    if p ~= LocalPlayer then createESP(p) end
+end
+
+Players.PlayerAdded:Connect(createESP)
+
+---------------------------------------------------------
+-- UI Elements
+---------------------------------------------------------
+
+-- Aimbot
+local AimbotMain = AimbotPage:Section({Name = "Main", Side = 1})
+local AimbotSettings = AimbotPage:Section({Name = "Settings", Side = 2})
+
+AimbotMain:Toggle({
+    Name = "Enable Aimbot",
+    Flag = "AimbotEnabled",
+    Default = false,
+    Callback = function(v)
+        AimbotEnabled = v
+        SilentAimEnabled = false
+    end
+})
+
+AimbotMain:Toggle({
+    Name = "Silent Aim",
+    Flag = "SilentAim",
+    Default = false,
+    Callback = function(v)
+        SilentAimEnabled = v
+        AimbotEnabled = false
+    end
+})
+
+AimbotSettings:Slider({
+    Name = "FOV",
+    Flag = "FOV",
+    Min = 10,
+    Max = 300,
+    Default = 90,
+    Callback = function(v)
+        FOV = v
+        Circle.Radius = v
+    end
+})
+
+AimbotSettings:Dropdown({
+    Name = "Target Part",
+    Items = {"Head","HumanoidRootPart","Torso"},
+    Default = "Head",
+    Callback = function(v)
+        TargetPart = v
+    end
+})
+
+AimbotSettings:Toggle({
+    Name = "Show FOV Circle",
+    Default = true,
+    Callback = function(v)
+        Circle.Visible = v
+    end
+})
+
+AimbotMain:Colorpicker({
+    Name = "FOV Color",
+    Default = Color3.fromRGB(255,255,255),
+    Callback = function(c)
+        FOVColor = c
+        Circle.Color = c
+    end
+})
+
+-- ESP
+local ESPSection = ESPPage:Section({Name = "ESP", Side = 1})
+
+ESPSection:Toggle({
+    Name = "Enable ESP",
+    Default = false,
+    Callback = function(v)
+        ESPEnabled = v
+    end
+})
+
+---------------------------------------------------------
+-- MOBILE UI TOGGLE BUTTON
+---------------------------------------------------------
+
+local function isMobile()
+    return UIS.TouchEnabled and not UIS.KeyboardEnabled
+end
+
+if isMobile() then
+    local ScreenGui = Instance.new("ScreenGui")
+    local ToggleButton = Instance.new("TextButton")
+
+    ScreenGui.Name = "MobileToggleUI"
+    ScreenGui.Parent = game.CoreGui
+
+    ToggleButton.Parent = ScreenGui
+    ToggleButton.Size = UDim2.new(0, 70, 0, 70)
+    ToggleButton.Position = UDim2.new(0.05, 0, 0.4, 0)
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+    ToggleButton.Text = "UI"
+    ToggleButton.TextColor3 = Color3.new(1,1,1)
+    ToggleButton.TextScaled = true
+    ToggleButton.BorderSizePixel = 0
+    ToggleButton.BackgroundTransparency = 0.2
+    ToggleButton.Active = true
+    ToggleButton.Draggable = true
+    ToggleButton.ZIndex = 9999999
+
+    -- Toggles the whole UI on mobile
+    local uiOpen = true
+
+    ToggleButton.MouseButton1Click:Connect(function()
+        uiOpen = not uiOpen
+
+        for _, gui in ipairs(game.CoreGui:GetChildren()) do
+            if gui ~= ScreenGui then
+                gui.Enabled = uiOpen
+            end
+        end
+    end)
+end
+
+---------------------------------------------------------
+-- Settings Page
+---------------------------------------------------------
+Library:CreateSettingsPage(Window)
+
+Library:Notification("Script loaded successfully!", 5, "94627324690861")
