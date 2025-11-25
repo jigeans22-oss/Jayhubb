@@ -77,7 +77,7 @@ if LPH_OBFUSCATED == nil then
     end
     LRM_IsUserPremium = false
     LRM_LinkedDiscordID = "0"
-    LRM_ScriptName = "Nameless hub PREMEIUM USER"
+    LRM_ScriptName = "bronx.lol"
     LRM_TotalExecutions = 0
     LRM_SecondsLeft = math.huge
     LRM_UserNote = "Developer";
@@ -264,6 +264,43 @@ if isfunctionhooked then
 end
 
 local SafePosition = CFrame.new(-437, 33, 6653)
+
+-- Walkspeed functionality
+local walkspeedConnection
+local function ApplyWalkspeed()
+    if Config.MiscSettings.ModifySpeed.Enabled then
+        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = Config.MiscSettings.ModifySpeed.Value
+        end
+    end
+end
+
+local function ToggleWalkspeed(enabled)
+    Config.MiscSettings.ModifySpeed.Enabled = enabled
+    if enabled then
+        if not walkspeedConnection then
+            walkspeedConnection = RunService.Heartbeat:Connect(ApplyWalkspeed)
+        end
+        ApplyWalkspeed()
+    else
+        if walkspeedConnection then
+            walkspeedConnection:Disconnect()
+            walkspeedConnection = nil
+        end
+        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = 16
+        end
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+    if Config.MiscSettings.ModifySpeed.Enabled then
+        task.wait(0.5)
+        ApplyWalkspeed()
+    end
+end)
 
 local Config = {
     ["TheBronx"] = {
@@ -735,60 +772,12 @@ local Config = {
     };
 };
 
--- Walkspeed implementation
-local function ApplyWalkspeed()
-    if Config.MiscSettings.ModifySpeed.Enabled then
-        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = Config.MiscSettings.ModifySpeed.Value
-        end
-    end
-end
-
--- Walkspeed connection
-local walkspeedConnection
+-- Initialize walkspeed if enabled
 if Config.MiscSettings.ModifySpeed.Enabled then
-    walkspeedConnection = RunService.Heartbeat:Connect(function()
-        ApplyWalkspeed()
-    end)
+    ToggleWalkspeed(true)
 end
 
--- Function to toggle walkspeed
-local function ToggleWalkspeed(enabled)
-    Config.MiscSettings.ModifySpeed.Enabled = enabled
-    if enabled then
-        if not walkspeedConnection then
-            walkspeedConnection = RunService.Heartbeat:Connect(ApplyWalkspeed)
-        end
-        ApplyWalkspeed()
-    else
-        if walkspeedConnection then
-            walkspeedConnection:Disconnect()
-            walkspeedConnection = nil
-        end
-        -- Reset to default walkspeed
-        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = 16 -- Default Roblox walkspeed
-        end
-    end
-end
-
--- Character added event to reapply walkspeed when respawning
-LocalPlayer.CharacterAdded:Connect(function()
-    if Config.MiscSettings.ModifySpeed.Enabled then
-        task.wait(0.5) -- Wait for character to fully load
-        ApplyWalkspeed()
-    end
-end)
-
--- Initial application
-if Config.MiscSettings.ModifySpeed.Enabled then
-    ApplyWalkspeed()
-end
-
--- End of script
-print("Script loaded successfully!")--[[
+print("Script loaded successfully!")
 	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
 ]]
 
