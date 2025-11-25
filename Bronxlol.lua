@@ -1,3 +1,6 @@
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
 if getgenv().loaded then 
     return
 end 
@@ -16,8 +19,8 @@ StarterGui:SetCore("SendNotification", {
 
 task.wait(8)
 StarterGui:SetCore("SendNotification", {
-    Title = "❗",
-    Text = "script made by HAXZO",
+    Title = "Nameless Hub",
+    Text = "Made By Nameless Studios",
     Duration = 8, -- seconds the notification stays on screen
     Button1 = "Got it"
 })
@@ -264,43 +267,6 @@ if isfunctionhooked then
 end
 
 local SafePosition = CFrame.new(-437, 33, 6653)
-
--- Walkspeed functionality
-local walkspeedConnection
-local function ApplyWalkspeed()
-    if Config.MiscSettings.ModifySpeed.Enabled then
-        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = Config.MiscSettings.ModifySpeed.Value
-        end
-    end
-end
-
-local function ToggleWalkspeed(enabled)
-    Config.MiscSettings.ModifySpeed.Enabled = enabled
-    if enabled then
-        if not walkspeedConnection then
-            walkspeedConnection = RunService.Heartbeat:Connect(ApplyWalkspeed)
-        end
-        ApplyWalkspeed()
-    else
-        if walkspeedConnection then
-            walkspeedConnection:Disconnect()
-            walkspeedConnection = nil
-        end
-        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = 16
-        end
-    end
-end
-
-LocalPlayer.CharacterAdded:Connect(function()
-    if Config.MiscSettings.ModifySpeed.Enabled then
-        task.wait(0.5)
-        ApplyWalkspeed()
-    end
-end)
 
 local Config = {
     ["TheBronx"] = {
@@ -771,16 +737,6 @@ local Config = {
         Fonts = {};
     };
 };
-
--- Initialize walkspeed if enabled
-if Config.MiscSettings.ModifySpeed.Enabled then
-    ToggleWalkspeed(true)
-end
-
-print("Script loaded successfully!")
-	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
-]]
-
 
 --[[if not Solara and Game_Name == "The Bronx" then
     local DTC;
