@@ -1,5 +1,5 @@
--- Nameless Hub | Rivals - Advanced UI
--- Working Version with Proper Execution
+-- Nameless Hub | Rivals - Fixed Button Version
+-- Complete working script with visible toggle button
 
 if not game:IsLoaded() then
     game.Loaded:Wait()
@@ -31,20 +31,46 @@ local function isMobile()
     return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
 end
 
+-- Create Toggle Button FIRST (so it's always visible)
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "NamelessHubToggle"
+ToggleButton.Size = UDim2.new(0, 120, 0, 50)
+ToggleButton.Position = UDim2.new(0, 20, 0, 20)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 80, 40)
+ToggleButton.BackgroundTransparency = 0
+ToggleButton.Text = "OPEN UI"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 16
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.AutoButtonColor = true
+ToggleButton.Visible = true
+ToggleButton.ZIndex = 100
+ToggleButton.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 8)
+ToggleCorner.Parent = ToggleButton
+
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Color = Color3.fromRGB(255, 255, 255)
+ToggleStroke.Thickness = 2
+ToggleStroke.Parent = ToggleButton
+
 -- Create Advanced UI
 local function CreateAdvancedUI()
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "NamelessHubAdvanced"
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    ScreenGui.Parent = LocalPlayer.PlayerGui
     
     -- Main Container (Initially hidden)
     local MainContainer = Instance.new("Frame")
     MainContainer.Size = UDim2.new(0, 400, 0, 450)
     MainContainer.Position = UDim2.new(0.5, -200, 0.5, -225)
     MainContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-    MainContainer.BackgroundTransparency = 0.1
+    MainContainer.BackgroundTransparency = 0
     MainContainer.BorderSizePixel = 0
     MainContainer.Visible = false
+    MainContainer.ZIndex = 10
     MainContainer.Parent = ScreenGui
     
     -- Outer Glow Effect
@@ -65,13 +91,15 @@ local function CreateAdvancedUI()
     FireContainer.Size = UDim2.new(1, 0, 1, 0)
     FireContainer.BackgroundTransparency = 1
     FireContainer.ClipsDescendants = true
+    FireContainer.ZIndex = 1
     FireContainer.Parent = MainContainer
     
-    -- Header with gradient
+    -- Header
     local Header = Instance.new("Frame")
     Header.Size = UDim2.new(1, 0, 0, 50)
     Header.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
     Header.BorderSizePixel = 0
+    Header.ZIndex = 11
     Header.Parent = MainContainer
     
     local HeaderCorner = Instance.new("UICorner")
@@ -88,6 +116,7 @@ local function CreateAdvancedUI()
     Title.TextSize = 20
     Title.Font = Enum.Font.GothamBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.ZIndex = 12
     Title.Parent = Header
     
     -- Subtitle
@@ -100,6 +129,7 @@ local function CreateAdvancedUI()
     Subtitle.TextSize = 11
     Subtitle.Font = Enum.Font.Gotham
     Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+    Subtitle.ZIndex = 12
     Subtitle.Parent = Header
     
     -- Close Button
@@ -111,6 +141,7 @@ local function CreateAdvancedUI()
     CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     CloseButton.TextSize = 12
     CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.ZIndex = 12
     CloseButton.Parent = Header
     
     local CloseCorner = Instance.new("UICorner")
@@ -122,6 +153,7 @@ local function CreateAdvancedUI()
     ContentArea.Size = UDim2.new(1, -20, 1, -70)
     ContentArea.Position = UDim2.new(0, 10, 0, 60)
     ContentArea.BackgroundTransparency = 1
+    ContentArea.ZIndex = 11
     ContentArea.Parent = MainContainer
     
     -- Make draggable
@@ -178,7 +210,8 @@ local function CreateToggleSwitch(parent, name, yPosition, defaultValue, callbac
     local ToggleContainer = CreateUIElement(parent, "Frame", {
         Size = UDim2.new(1, 0, 0, 40),
         Position = UDim2.new(0, 0, 0, yPosition),
-        BackgroundTransparency = 1
+        BackgroundTransparency = 1,
+        ZIndex = 12
     })
     
     local ToggleLabel = CreateUIElement(ToggleContainer, "TextLabel", {
@@ -189,7 +222,8 @@ local function CreateToggleSwitch(parent, name, yPosition, defaultValue, callbac
         TextColor3 = Color3.fromRGB(255, 255, 255),
         TextSize = 16,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.GothamBold
+        Font = Enum.Font.GothamBold,
+        ZIndex = 13
     })
     
     local ToggleButton = CreateUIElement(ToggleContainer, "TextButton", {
@@ -197,7 +231,8 @@ local function CreateToggleSwitch(parent, name, yPosition, defaultValue, callbac
         Position = UDim2.new(1, -50, 0.5, -12),
         BackgroundColor3 = defaultValue and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(80, 80, 100),
         Text = "",
-        AutoButtonColor = false
+        AutoButtonColor = false,
+        ZIndex = 13
     })
     
     local ToggleCorner = CreateUIElement(ToggleButton, "UICorner", {
@@ -208,7 +243,8 @@ local function CreateToggleSwitch(parent, name, yPosition, defaultValue, callbac
         Size = UDim2.new(0, 21, 0, 21),
         Position = defaultValue and UDim2.new(1, -23, 0.5, -10) or UDim2.new(0, 2, 0.5, -10),
         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        BorderSizePixel = 0
+        BorderSizePixel = 0,
+        ZIndex = 14
     })
     
     local KnobCorner = CreateUIElement(ToggleKnob, "UICorner", {
@@ -241,7 +277,8 @@ local function CreateSlider(parent, name, yPosition, min, max, defaultValue, cal
     local SliderContainer = CreateUIElement(parent, "Frame", {
         Size = UDim2.new(1, 0, 0, 50),
         Position = UDim2.new(0, 0, 0, yPosition),
-        BackgroundTransparency = 1
+        BackgroundTransparency = 1,
+        ZIndex = 12
     })
     
     local SliderLabel = CreateUIElement(SliderContainer, "TextLabel", {
@@ -252,7 +289,8 @@ local function CreateSlider(parent, name, yPosition, min, max, defaultValue, cal
         TextColor3 = Color3.fromRGB(255, 255, 255),
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.Gotham
+        Font = Enum.Font.Gotham,
+        ZIndex = 13
     })
     
     local SliderTrack = CreateUIElement(SliderContainer, "TextButton", {
@@ -260,7 +298,8 @@ local function CreateSlider(parent, name, yPosition, min, max, defaultValue, cal
         Position = UDim2.new(0, 0, 0, 25),
         BackgroundColor3 = Color3.fromRGB(50, 50, 70),
         Text = "",
-        AutoButtonColor = false
+        AutoButtonColor = false,
+        ZIndex = 13
     })
     
     local TrackCorner = CreateUIElement(SliderTrack, "UICorner", {
@@ -270,7 +309,8 @@ local function CreateSlider(parent, name, yPosition, min, max, defaultValue, cal
     local SliderFill = CreateUIElement(SliderTrack, "Frame", {
         Size = UDim2.new((defaultValue - min) / (max - min), 0, 1, 0),
         BackgroundColor3 = Color3.fromRGB(255, 100, 50),
-        BorderSizePixel = 0
+        BorderSizePixel = 0,
+        ZIndex = 14
     })
     
     local FillCorner = CreateUIElement(SliderFill, "UICorner", {
@@ -320,7 +360,8 @@ local function CreateDropdown(parent, name, yPosition, options, defaultValue, ca
     local DropdownContainer = CreateUIElement(parent, "Frame", {
         Size = UDim2.new(1, 0, 0, 40),
         Position = UDim2.new(0, 0, 0, yPosition),
-        BackgroundTransparency = 1
+        BackgroundTransparency = 1,
+        ZIndex = 12
     })
     
     local DropdownLabel = CreateUIElement(DropdownContainer, "TextLabel", {
@@ -331,7 +372,8 @@ local function CreateDropdown(parent, name, yPosition, options, defaultValue, ca
         TextColor3 = Color3.fromRGB(255, 255, 255),
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.GothamBold
+        Font = Enum.Font.GothamBold,
+        ZIndex = 13
     })
     
     local DropdownButton = CreateUIElement(DropdownContainer, "TextButton", {
@@ -341,7 +383,8 @@ local function CreateDropdown(parent, name, yPosition, options, defaultValue, ca
         Text = defaultValue,
         TextColor3 = Color3.fromRGB(255, 255, 255),
         TextSize = 12,
-        Font = Enum.Font.Gotham
+        Font = Enum.Font.Gotham,
+        ZIndex = 13
     })
     
     local DropdownCorner = CreateUIElement(DropdownButton, "UICorner", {
@@ -361,7 +404,7 @@ local function CreateDropdown(parent, name, yPosition, options, defaultValue, ca
                 BackgroundColor3 = Color3.fromRGB(40, 40, 60),
                 BorderSizePixel = 0,
                 ClipsDescendants = true,
-                ZIndex = 10
+                ZIndex = 20
             })
             
             local DropdownListCorner = CreateUIElement(DropdownFrame, "UICorner", {
@@ -377,7 +420,8 @@ local function CreateDropdown(parent, name, yPosition, options, defaultValue, ca
                     TextColor3 = Color3.fromRGB(255, 255, 255),
                     TextSize = 12,
                     Font = Enum.Font.Gotham,
-                    AutoButtonColor = false
+                    AutoButtonColor = false,
+                    ZIndex = 21
                 })
                 
                 OptionButton.MouseButton1Click:Connect(function()
@@ -423,7 +467,8 @@ local function StartFireAnimation(fireContainer)
                         math.random(0, 50)
                     ),
                     BackgroundTransparency = 0.7,
-                    BorderSizePixel = 0
+                    BorderSizePixel = 0,
+                    ZIndex = 2
                 })
                 
                 local FireCorner = CreateUIElement(FireParticle, "UICorner", {
@@ -495,33 +540,17 @@ CreateToggleSwitch(AdvancedUI.ContentArea, "ESP", 220, false, function(value)
     print("ESP:", value and "ON" or "OFF")
 end)
 
--- Toggle Button
-local ToggleButton = CreateUIElement(LocalPlayer.PlayerGui, "TextButton", {
-    Size = UDim2.new(0, 100, 0, 40),
-    Position = UDim2.new(0, 10, 0, 10),
-    BackgroundColor3 = Color3.fromRGB(255, 80, 40),
-    Text = "OPEN",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    TextSize = 14,
-    Font = Enum.Font.GothamBold,
-    AutoButtonColor = false
-})
-
-local ToggleCorner = CreateUIElement(ToggleButton, "UICorner", {
-    CornerRadius = UDim.new(0, 8)
-})
-
--- Toggle UI visibility
+-- Toggle Button functionality
 ToggleButton.MouseButton1Click:Connect(function()
     Config.UIVisible = not Config.UIVisible
     AdvancedUI.MainContainer.Visible = Config.UIVisible
-    ToggleButton.Text = Config.UIVisible and "CLOSE" or "OPEN"
+    ToggleButton.Text = Config.UIVisible and "CLOSE UI" or "OPEN UI"
 end)
 
 AdvancedUI.CloseButton.MouseButton1Click:Connect(function()
     Config.UIVisible = false
     AdvancedUI.MainContainer.Visible = false
-    ToggleButton.Text = "OPEN"
+    ToggleButton.Text = "OPEN UI"
 end)
 
 -- Start fire animation
@@ -594,17 +623,6 @@ local function GetClosestTarget()
     return closestTarget
 end
 
--- Platform-specific aiming
-local function GetClosestTargetPosition()
-    if not Config.SilentAimEnabled then return nil end
-    
-    local target = GetClosestTarget()
-    if target and target.Character and target.Character:FindFirstChild(Config.AimPartName) then
-        return target.Character[Config.AimPartName].Position
-    end
-    return nil
-end
-
 -- ESP System
 local espObjects = {}
 local function CreateESP(player)
@@ -672,7 +690,7 @@ Players.PlayerRemoving:Connect(function(player)
         if espObjects[player].Name then espObjects[player].Name:Remove() end
         espObjects[player] = nil
     end
-end)
+end
 
 -- Main loop
 RunService.RenderStepped:Connect(function()
@@ -688,14 +706,14 @@ end)
 print("====================================")
 print("Nameless Hub | Rivals - LOADED")
 print("Platform: " .. (isMobile() and "Mobile" or "PC"))
-print("UI Type: Advanced Animated UI")
-print("Features: Silent Aim, ESP, FOV Circle")
-print("Toggle Button: Click to Open/Close")
+print("Toggle Button: Top-Left Corner (20,20)")
+print("Button Size: 120x50 pixels")
+print("Button Color: Orange with white border")
 print("====================================")
 
--- Success message
+-- Success message with button location info
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "Nameless Hub Loaded!",
-    Text = "Click the OPEN button to show UI",
-    Duration = 5
+    Text = "Look for ORANGE button in TOP-LEFT corner",
+    Duration = 8
 })
