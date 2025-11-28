@@ -1,5 +1,5 @@
 -- Nameless Hub | Rivals
--- Fixed & Working Version
+-- Fixed Orion UI Version
 
 if not game:IsLoaded() then
     game.Loaded:Wait()
@@ -16,173 +16,18 @@ local Camera = workspace.CurrentCamera
 -- Wait for player
 repeat wait() until LocalPlayer.Character
 
--- Simple UI Library (since Orion might not load properly)
-local function CreateSimpleUI()
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "NamelessHub"
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 350, 0, 400)
-    MainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Parent = ScreenGui
-    
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 8)
-    UICorner.Parent = MainFrame
-    
-    -- Header
-    local Header = Instance.new("Frame")
-    Header.Size = UDim2.new(1, 0, 0, 40)
-    Header.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    Header.BorderSizePixel = 0
-    Header.Parent = MainFrame
-    
-    local HeaderCorner = Instance.new("UICorner")
-    HeaderCorner.CornerRadius = UDim.new(0, 8)
-    HeaderCorner.Parent = Header
-    
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, 0, 1, 0)
-    Title.BackgroundTransparency = 1
-    Title.Text = "NAMELESS HUB | RIVALS"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.TextSize = 18
-    Title.Font = Enum.Font.GothamBold
-    Title.Parent = Header
-    
-    -- Close Button
-    local CloseButton = Instance.new("TextButton")
-    CloseButton.Size = UDim2.new(0, 30, 0, 30)
-    CloseButton.Position = UDim2.new(1, -35, 0, 5)
-    CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    CloseButton.Text = "X"
-    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CloseButton.TextSize = 14
-    CloseButton.Font = Enum.Font.GothamBold
-    CloseButton.Parent = Header
-    
-    local CloseCorner = Instance.new("UICorner")
-    CloseCorner.CornerRadius = UDim.new(0, 6)
-    CloseCorner.Parent = CloseButton
-    
-    -- Content Frame
-    local ContentFrame = Instance.new("Frame")
-    ContentFrame.Size = UDim2.new(1, -20, 1, -60)
-    ContentFrame.Position = UDim2.new(0, 10, 0, 50)
-    ContentFrame.BackgroundTransparency = 1
-    ContentFrame.Parent = MainFrame
-    
-    -- Toggles
-    local toggles = {}
-    
-    local function CreateToggle(name, yPosition, defaultValue)
-        local toggle = Instance.new("TextButton")
-        toggle.Size = UDim2.new(1, 0, 0, 35)
-        toggle.Position = UDim2.new(0, 0, 0, yPosition)
-        toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-        toggle.Text = name .. ": OFF"
-        toggle.TextColor3 = Color3.fromRGB(255, 100, 100)
-        toggle.TextSize = 14
-        toggle.Font = Enum.Font.Gotham
-        toggle.Parent = ContentFrame
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 6)
-        corner.Parent = toggle
-        
-        toggles[name] = {
-            Button = toggle,
-            Value = defaultValue,
-            Callback = nil
-        }
-        
-        return toggles[name]
-    end
-    
-    -- Create toggles
-    local silentAimToggle = CreateToggle("Silent Aim", 10, false)
-    local espToggle = CreateToggle("ESP", 55, false)
-    local fovToggle = CreateToggle("FOV Circle", 100, false)
-    
-    -- FOV Slider
-    local FOVLabel = Instance.new("TextLabel")
-    FOVLabel.Size = UDim2.new(1, 0, 0, 20)
-    FOVLabel.Position = UDim2.new(0, 0, 0, 145)
-    FOVLabel.BackgroundTransparency = 1
-    FOVLabel.Text = "Aim FOV: 100"
-    FOVLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    FOVLabel.TextSize = 14
-    FOVLabel.Font = Enum.Font.Gotham
-    FOVLabel.Parent = ContentFrame
-    
-    local FOVSlider = Instance.new("TextButton")
-    FOVSlider.Size = UDim2.new(1, 0, 0, 25)
-    FOVSlider.Position = UDim2.new(0, 0, 0, 170)
-    FOVSlider.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    FOVSlider.Text = ""
-    FOVSlider.AutoButtonColor = false
-    FOVSlider.Parent = ContentFrame
-    
-    local FOVFill = Instance.new("Frame")
-    FOVFill.Size = UDim2.new(0.5, 0, 1, 0)
-    FOVFill.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
-    FOVFill.BorderSizePixel = 0
-    FOVFill.Parent = FOVSlider
-    
-    local sliderCorner = Instance.new("UICorner")
-    sliderCorner.CornerRadius = UDim.new(0, 6)
-    sliderCorner.Parent = FOVSlider
-    
-    local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(0, 6)
-    fillCorner.Parent = FOVFill
-    
-    -- Make draggable
-    local dragging = false
-    local dragStart, startPos
-    
-    Header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = MainFrame.Position
-        end
-    end)
-    
-    Header.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-    
-    Header.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    
-    CloseButton.MouseButton1Click:Connect(function()
-        ScreenGui:Destroy()
-    end)
-    
-    return {
-        ScreenGui = ScreenGui,
-        Toggles = toggles,
-        FOVLabel = FOVLabel,
-        FOVSlider = FOVSlider,
-        FOVFill = FOVFill
-    }
-end
+-- Load Orion UI
+local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
 
--- Create UI
-local UI = CreateSimpleUI()
+-- Create Window
+local Window = OrionLib:MakeWindow({
+    Name = "Nameless Hub | Rivals",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "NamelessHubRivals",
+    IntroEnabled = true,
+    IntroText = "Nameless Hub"
+})
 
 -- Configuration
 local SilentAimEnabled = false
@@ -199,7 +44,10 @@ end
 -- FOV Circle
 local FOVCircle = nil
 local function CreateFOVCircle()
-    if FOVCircle then FOVCircle:Remove() end
+    if FOVCircle then 
+        FOVCircle:Remove() 
+        FOVCircle = nil
+    end
     
     FOVCircle = Drawing.new("Circle")
     FOVCircle.Visible = FOVCircleEnabled
@@ -207,6 +55,7 @@ local function CreateFOVCircle()
     FOVCircle.Color = Color3.fromRGB(255, 255, 255)
     FOVCircle.Thickness = 2
     FOVCircle.Filled = false
+    FOVCircle.Transparency = 1
     
     if isMobile() then
         FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -239,7 +88,13 @@ local function GetClosestTarget()
             if humanoid and humanoid.Health > 0 and aimPart then
                 local targetPos, onScreen = Camera:WorldToViewportPoint(aimPart.Position)
                 if onScreen then
-                    local inputPos = isMobile() and Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) or UserInputService:GetMouseLocation()
+                    local inputPos
+                    if isMobile() then
+                        inputPos = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+                    else
+                        inputPos = UserInputService:GetMouseLocation()
+                    end
+                    
                     local distance = (Vector2.new(targetPos.X, targetPos.Y) - inputPos).Magnitude
                     
                     if distance < shortestDistance then
@@ -267,32 +122,55 @@ end
 
 -- Hook for shooting
 local oldNamecall
-if metatable then
-    local meta = getrawmetatable(game)
-    oldNamecall = meta.__namecall
+local hooked = false
+
+local function setupSilentAim()
+    if hooked then return end
     
-    setreadonly(meta, false)
-    
-    meta.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        local args = {...}
-        
-        if SilentAimEnabled and (method == "FireServer" or method == "InvokeServer") then
-            local targetPos = GetClosestTargetPosition()
-            if targetPos then
-                -- Modify shooting arguments for Rivals
-                if type(args[1]) == "table" and args[1].Position then
-                    args[1].Position = targetPos
-                elseif type(args[1]) == "Vector3" then
-                    args[1] = targetPos
-                end
-            end
+    local success, errorMsg = pcall(function()
+        if not getrawmetatable then
+            error("getrawmetatable not available")
         end
         
-        return oldNamecall(self, unpack(args))
+        local meta = getrawmetatable(game)
+        if not meta then
+            error("Could not get metatable")
+        end
+        
+        oldNamecall = meta.__namecall
+        
+        setreadonly(meta, false)
+        
+        meta.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            
+            if SilentAimEnabled and (method == "FireServer" or method == "invokeServer") then
+                local targetPos = GetClosestTargetPosition()
+                if targetPos then
+                    -- Modify shooting arguments for Rivals
+                    if type(args[1]) == "table" then
+                        if args[1].Position then
+                            args[1].Position = targetPos
+                        elseif args[1].Target then
+                            args[1].Target = targetPos
+                        end
+                    elseif type(args[1]) == "Vector3" then
+                        args[1] = targetPos
+                    end
+                end
+            end
+            
+            return oldNamecall(self, unpack(args))
+        end)
+        
+        setreadonly(meta, true)
+        hooked = true
     end)
     
-    setreadonly(meta, true)
+    if not success then
+        warn("Silent Aim hook failed: " .. tostring(errorMsg))
+    end
 end
 
 -- ESP System
@@ -355,83 +233,6 @@ local function UpdateESP()
     end
 end
 
--- UI Interactions
--- Silent Aim Toggle
-UI.Toggles["Silent Aim"].Button.MouseButton1Click:Connect(function()
-    SilentAimEnabled = not SilentAimEnabled
-    if SilentAimEnabled then
-        UI.Toggles["Silent Aim"].Button.Text = "Silent Aim: ON"
-        UI.Toggles["Silent Aim"].Button.TextColor3 = Color3.fromRGB(100, 255, 100)
-    else
-        UI.Toggles["Silent Aim"].Button.Text = "Silent Aim: OFF"
-        UI.Toggles["Silent Aim"].Button.TextColor3 = Color3.fromRGB(255, 100, 100)
-    end
-end)
-
--- ESP Toggle
-UI.Toggles["ESP"].Button.MouseButton1Click:Connect(function()
-    ESPEnabled = not ESPEnabled
-    if ESPEnabled then
-        UI.Toggles["ESP"].Button.Text = "ESP: ON"
-        UI.Toggles["ESP"].Button.TextColor3 = Color3.fromRGB(100, 255, 100)
-    else
-        UI.Toggles["ESP"].Button.Text = "ESP: OFF"
-        UI.Toggles["ESP"].Button.TextColor3 = Color3.fromRGB(255, 100, 100)
-        -- Hide ESP
-        for _, esp in pairs(espObjects) do
-            esp.Box.Visible = false
-            esp.Name.Visible = false
-        end
-    end
-end)
-
--- FOV Circle Toggle
-UI.Toggles["FOV Circle"].Button.MouseButton1Click:Connect(function()
-    FOVCircleEnabled = not FOVCircleEnabled
-    if FOVCircleEnabled then
-        UI.Toggles["FOV Circle"].Button.Text = "FOV Circle: ON"
-        UI.Toggles["FOV Circle"].Button.TextColor3 = Color3.fromRGB(100, 255, 100)
-        CreateFOVCircle()
-    else
-        UI.Toggles["FOV Circle"].Button.Text = "FOV Circle: OFF"
-        UI.Toggles["FOV Circle"].Button.TextColor3 = Color3.fromRGB(255, 100, 100)
-        if FOVCircle then
-            FOVCircle.Visible = false
-        end
-    end
-end)
-
--- FOV Slider
-local isSliding = false
-UI.FOVSlider.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isSliding = true
-    end
-end)
-
-UI.FOVSlider.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isSliding = false
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if isSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local mousePos = UserInputService:GetMouseLocation()
-        local sliderPos = UI.FOVSlider.AbsolutePosition
-        local sliderSize = UI.FOVSlider.AbsoluteSize
-        local relativeX = math.clamp((mousePos.X - sliderPos.X) / sliderSize.X, 0, 1)
-        
-        UI.FOVFill.Size = UDim2.new(relativeX, 0, 1, 0)
-        AimFOV = math.floor(50 + relativeX * 200) -- 50-250 range
-        UI.FOVLabel.Text = "Aim FOV: " .. AimFOV
-        
-        if FOVCircle then
-            FOVCircle.Radius = AimFOV
-        end
-    end
-end)
-
 -- Clean up ESP when players leave
 Players.PlayerRemoving:Connect(function(player)
     if espObjects[player] then
@@ -440,6 +241,152 @@ Players.PlayerRemoving:Connect(function(player)
         espObjects[player] = nil
     end
 end)
+
+-- Create Tabs
+local CombatTab = Window:MakeTab({
+    Name = "Combat",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local VisualsTab = Window:MakeTab({
+    Name = "Visuals", 
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local SettingsTab = Window:MakeTab({
+    Name = "Settings",
+    Icon = "rbxassetid://4483345998", 
+    PremiumOnly = false
+})
+
+-- Combat Tab
+CombatTab:AddToggle({
+    Name = "Silent Aim",
+    Default = false,
+    Callback = function(Value)
+        SilentAimEnabled = Value
+        if Value then
+            setupSilentAim()
+        end
+    end    
+})
+
+CombatTab:AddToggle({
+    Name = "FOV Circle", 
+    Default = false,
+    Callback = function(Value)
+        FOVCircleEnabled = Value
+        if Value then
+            CreateFOVCircle()
+        elseif FOVCircle then
+            FOVCircle.Visible = false
+        end
+    end    
+})
+
+CombatTab:AddSlider({
+    Name = "Aim FOV",
+    Min = 10,
+    Max = 500,
+    Default = 100,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 1,
+    ValueName = "FOV",
+    Callback = function(Value)
+        AimFOV = Value
+        if FOVCircle then
+            FOVCircle.Radius = Value
+        end
+    end    
+})
+
+CombatTab:AddDropdown({
+    Name = "Aim Part",
+    Default = "Head",
+    Options = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
+    Callback = function(Value)
+        AimPartName = Value
+    end    
+})
+
+-- Visuals Tab
+VisualsTab:AddToggle({
+    Name = "ESP",
+    Default = false,
+    Callback = function(Value)
+        ESPEnabled = Value
+        if not Value then
+            -- Hide all ESP when turned off
+            for _, esp in pairs(espObjects) do
+                esp.Box.Visible = false
+                esp.Name.Visible = false
+            end
+        end
+    end    
+})
+
+VisualsTab:AddColorpicker({
+    Name = "ESP Color", 
+    Default = Color3.fromRGB(255, 0, 0),
+    Callback = function(Value)
+        for _, esp in pairs(espObjects) do
+            esp.Box.Color = Value
+        end
+    end
+})
+
+VisualsTab:AddToggle({
+    Name = "Show Names",
+    Default = true,
+    Callback = function(Value)
+        for _, esp in pairs(espObjects) do
+            esp.Name.Visible = Value and ESPEnabled
+        end
+    end
+})
+
+-- Settings Tab
+SettingsTab:AddButton({
+    Name = "Destroy UI",
+    Callback = function()
+        OrionLib:Destroy()
+        -- Clean up drawings
+        if FOVCircle then
+            FOVCircle:Remove()
+        end
+        for _, esp in pairs(espObjects) do
+            esp.Box:Remove()
+            esp.Name:Remove()
+        end
+    end    
+})
+
+SettingsTab:AddLabel("Mobile Mode: " .. tostring(isMobile()))
+SettingsTab:AddLabel("Made by Haxzo")
+
+-- Mobile UI Toggle Button
+if isMobile() then
+    local MobileToggle = Instance.new("TextButton")
+    MobileToggle.Name = "MobileUIToggle"
+    MobileToggle.Size = UDim2.new(0, 100, 0, 40)
+    MobileToggle.Position = UDim2.new(0, 10, 0, 10)
+    MobileToggle.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    MobileToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MobileToggle.Text = "TOGGLE UI"
+    MobileToggle.TextSize = 14
+    MobileToggle.Font = Enum.Font.GothamBold
+    MobileToggle.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = MobileToggle
+    
+    MobileToggle.MouseButton1Click:Connect(function()
+        OrionLib:ToggleUI()
+    end)
+end
 
 -- Main loop
 RunService.RenderStepped:Connect(function()
@@ -452,5 +399,11 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-print("Nameless Hub | Rivals Loaded Successfully!")
-print("Mobile Mode: " .. tostring(isMobile()))
+-- Initialize silent aim hook
+setupSilentAim()
+
+-- Init Orion UI
+OrionLib:Init()
+
+print("Nameless Hub | Rivals - Orion UI Loaded!")
+print("Platform: " .. (isMobile() and "Mobile" or "PC"))
