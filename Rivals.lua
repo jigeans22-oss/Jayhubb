@@ -63,6 +63,10 @@ local TouchStartPosition = nil
 local TouchCurrentPosition = nil
 local IsTouching = false
 
+--// Rayfield UI Variables
+local Rayfield = nil
+local Window = nil
+
 --[[
 local Degrade = false
 
@@ -153,6 +157,16 @@ getgenv().ExunysDeveloperAimbot = {
 	MobileUI = {
 		AimButton = nil,
 		AimButtonFrame = nil
+	},
+	
+	-- Rayfield UI Elements
+	RayfieldUI = {
+		Loaded = false,
+		Toggle = nil,
+		FOVToggle = nil,
+		TeamCheckToggle = nil,
+		AliveCheckToggle = nil,
+		WallCheckToggle = nil
 	}
 }
 
@@ -349,6 +363,442 @@ local HandleMobileInput = function()
 	end
 end
 
+--// Rayfield UI Functions
+
+local CreateRayfieldUI = function()
+    -- Load Rayfield Library
+    local Success, Result = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source.lua"))()
+    end)
+    
+    if not Success then
+        warn("Rayfield UI Library failed to load: " .. tostring(Result))
+        return false
+    end
+    
+    Rayfield = Result
+    
+    -- Create Window
+    Window = Rayfield:CreateWindow({
+        Name = "Nameless Hub",
+        LoadingTitle = "Loading Nameless",
+        LoadingSubtitle = "by Haxzo",
+        ConfigurationSaving = {
+            Enabled = true,
+            FolderName = "Haxzoaimbot",
+            FileName = "Configuration"
+        },
+        Discord = {
+            Enabled = false,
+            Invite = "noinvitelink",
+            RememberJoins = true
+        },
+        KeySystem = True,
+        KeySettings = {
+            Title = "Nameless keysystem",
+            Subtitle = "Key System",
+            Note = "No method of obtaining the key is provided",
+            FileName = "Key",
+            SaveKey = true,
+            GrabKeyFromSite = false,
+            Key = {"Haxzo"}
+        }
+    })
+    
+    -- Main Tab
+    local MainTab = Window:CreateTab("Main", 4483362458)
+    
+    -- Toggle
+    Environment.RayfieldUI.Toggle = MainTab:CreateToggle({
+        Name = "Enable Aimbot",
+        CurrentValue = Environment.Settings.Enabled,
+        Flag = "AimbotToggle",
+        Callback = function(Value)
+            Environment.Settings.Enabled = Value
+        end,
+    })
+    
+    -- FOV Circle Toggle
+    Environment.RayfieldUI.FOVToggle = MainTab:CreateToggle({
+        Name = "Show FOV Circle",
+        CurrentValue = Environment.FOVSettings.Enabled,
+        Flag = "FOVToggle",
+        Callback = function(Value)
+            Environment.FOVSettings.Enabled = Value
+            Environment.FOVSettings.Visible = Value
+        end,
+    })
+    
+    -- Team Check Toggle
+    Environment.RayfieldUI.TeamCheckToggle = MainTab:CreateToggle({
+        Name = "Team Check",
+        CurrentValue = Environment.Settings.TeamCheck,
+        Flag = "TeamCheckToggle",
+        Callback = function(Value)
+            Environment.Settings.TeamCheck = Value
+        end,
+    })
+    
+    -- Alive Check Toggle
+    Environment.RayfieldUI.AliveCheckToggle = MainTab:CreateToggle({
+        Name = "Alive Check",
+        CurrentValue = Environment.Settings.AliveCheck,
+        Flag = "AliveCheckToggle",
+        Callback = function(Value)
+            Environment.Settings.AliveCheck = Value
+        end,
+    })
+    
+    -- Wall Check Toggle
+    Environment.RayfieldUI.WallCheckToggle = MainTab:CreateToggle({
+        Name = "Wall Check",
+        CurrentValue = Environment.Settings.WallCheck,
+        Flag = "WallCheckToggle",
+        Callback = function(Value)
+            Environment.Settings.WallCheck = Value
+        end,
+    })
+    
+    -- Toggle Mode
+    MainTab:CreateToggle({
+        Name = "Toggle Mode",
+        CurrentValue = Environment.Settings.Toggle,
+        Flag = "ToggleMode",
+        Callback = function(Value)
+            Environment.Settings.Toggle = Value
+        end,
+    })
+    
+    -- Lock Part Dropdown
+    MainTab:CreateDropdown({
+        Name = "Lock Part",
+        Options = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
+        CurrentOption = Environment.Settings.LockPart,
+        Flag = "LockPartDropdown",
+        Callback = function(Option)
+            Environment.Settings.LockPart = Option
+        end,
+    })
+    
+    -- Lock Mode Dropdown
+    MainTab:CreateDropdown({
+        Name = "Lock Mode",
+        Options = {"CFrame", "MouseMove"},
+        CurrentOption = Environment.Settings.LockMode == 1 and "CFrame" or "MouseMove",
+        Flag = "LockModeDropdown",
+        Callback = function(Option)
+            Environment.Settings.LockMode = Option == "CFrame" and 1 or 2
+        end,
+    })
+    
+    -- FOV Settings Tab
+    local FOVTab = Window:CreateTab("FOV Settings", 4483362458)
+    
+    -- FOV Radius Slider
+    FOVTab:CreateSlider({
+        Name = "FOV Radius",
+        Range = {1, 500},
+        Increment = 1,
+        Suffix = "px",
+        CurrentValue = Environment.FOVSettings.Radius,
+        Flag = "FOVRadius",
+        Callback = function(Value)
+            Environment.FOVSettings.Radius = Value
+        end,
+    })
+    
+    -- FOV Thickness Slider
+    FOVTab:CreateSlider({
+        Name = "FOV Thickness",
+        Range = {1, 10},
+        Increment = 1,
+        Suffix = "px",
+        CurrentValue = Environment.FOVSettings.Thickness,
+        Flag = "FOVThickness",
+        Callback = function(Value)
+            Environment.FOVSettings.Thickness = Value
+        end,
+    })
+    
+    -- FOV Transparency Slider
+    FOVTab:CreateSlider({
+        Name = "FOV Transparency",
+        Range = {0, 1},
+        Increment = 0.1,
+        Suffix = "",
+        CurrentValue = Environment.FOVSettings.Transparency,
+        Flag = "FOVTransparency",
+        Callback = function(Value)
+            Environment.FOVSettings.Transparency = Value
+        end,
+    })
+    
+    -- FOV Color Picker
+    FOVTab:CreateColorPicker({
+        Name = "FOV Color",
+        Color = Environment.FOVSettings.Color,
+        Flag = "FOVColor",
+        Callback = function(Value)
+            Environment.FOVSettings.Color = Value
+            Environment.FOVSettings.RainbowColor = false
+        end
+    })
+    
+    -- FOV Outline Color Picker
+    FOVTab:CreateColorPicker({
+        Name = "FOV Outline Color",
+        Color = Environment.FOVSettings.OutlineColor,
+        Flag = "FOVOutlineColor",
+        Callback = function(Value)
+            Environment.FOVSettings.OutlineColor = Value
+            Environment.FOVSettings.RainbowOutlineColor = false
+        end
+    })
+    
+    -- Locked Color Picker
+    FOVTab:CreateColorPicker({
+        Name = "Locked Color",
+        Color = Environment.FOVSettings.LockedColor,
+        Flag = "LockedColor",
+        Callback = function(Value)
+            Environment.FOVSettings.LockedColor = Value
+        end
+    })
+    
+    -- Rainbow Toggles
+    FOVTab:CreateToggle({
+        Name = "Rainbow FOV Color",
+        CurrentValue = Environment.FOVSettings.RainbowColor,
+        Flag = "RainbowFOV",
+        Callback = function(Value)
+            Environment.FOVSettings.RainbowColor = Value
+        end,
+    })
+    
+    FOVTab:CreateToggle({
+        Name = "Rainbow Outline Color",
+        CurrentValue = Environment.FOVSettings.RainbowOutlineColor,
+        Flag = "RainbowOutline",
+        Callback = function(Value)
+            Environment.FOVSettings.RainbowOutlineColor = Value
+        end,
+    })
+    
+    -- Sensitivity Tab
+    local SensitivityTab = Window:CreateTab("Sensitivity", 4483362458)
+    
+    -- Aim Sensitivity Slider
+    SensitivityTab:CreateSlider({
+        Name = "Aim Sensitivity",
+        Range = {0, 5},
+        Increment = 0.1,
+        Suffix = "s",
+        CurrentValue = Environment.Settings.Sensitivity,
+        Flag = "AimSensitivity",
+        Callback = function(Value)
+            Environment.Settings.Sensitivity = Value
+        end,
+    })
+    
+    -- Mouse Sensitivity Slider
+    SensitivityTab:CreateSlider({
+        Name = "Mouse Sensitivity",
+        Range = {0.1, 10},
+        Increment = 0.1,
+        Suffix = "x",
+        CurrentValue = Environment.Settings.Sensitivity2,
+        Flag = "MouseSensitivity",
+        Callback = function(Value)
+            Environment.Settings.Sensitivity2 = Value
+        end,
+    })
+    
+    -- Offset Increment Slider
+    SensitivityTab:CreateSlider({
+        Name = "Offset Increment",
+        Range = {1, 30},
+        Increment = 1,
+        Suffix = "",
+        CurrentValue = Environment.Settings.OffsetIncrement,
+        Flag = "OffsetIncrement",
+        Callback = function(Value)
+            Environment.Settings.OffsetIncrement = Value
+        end,
+    })
+    
+    -- Offset Toggle
+    SensitivityTab:CreateToggle({
+        Name = "Offset To Move Direction",
+        CurrentValue = Environment.Settings.OffsetToMoveDirection,
+        Flag = "OffsetToggle",
+        Callback = function(Value)
+            Environment.Settings.OffsetToMoveDirection = Value
+        end,
+    })
+    
+    -- Mobile Tab
+    if IsMobile then
+        local MobileTab = Window:CreateTab("Mobile", 4483362458)
+        
+        -- Mobile Trigger Dropdown
+        MobileTab:CreateDropdown({
+            Name = "Mobile Trigger",
+            Options = {"Touch", "Button", "Both"},
+            CurrentOption = Environment.Settings.MobileTrigger,
+            Flag = "MobileTrigger",
+            Callback = function(Option)
+                Environment.Settings.MobileTrigger = Option
+            end,
+        })
+        
+        -- Button Size Slider
+        MobileTab:CreateSlider({
+            Name = "Button Size",
+            Range = {50, 150},
+            Increment = 5,
+            Suffix = "px",
+            CurrentValue = Environment.Settings.MobileButtonSize,
+            Flag = "ButtonSize",
+            Callback = function(Value)
+                Environment:SetMobileButtonSize(Value)
+            end,
+        })
+        
+        -- Button Transparency Slider
+        MobileTab:CreateSlider({
+            Name = "Button Transparency",
+            Range = {0, 1},
+            Increment = 0.1,
+            Suffix = "",
+            CurrentValue = Environment.Settings.MobileButtonTransparency,
+            Flag = "ButtonTransparency",
+            Callback = function(Value)
+                Environment:SetMobileButtonTransparency(Value)
+            end,
+        })
+    end
+    
+    -- Player Management Tab
+    local PlayerTab = Window:CreateTab("Players", 4483362458)
+    
+    -- Blacklist Section
+    PlayerTab:CreateSection("Blacklist Management")
+    
+    -- Player List Dropdown
+    local PlayerDropdown = PlayerTab:CreateDropdown({
+        Name = "Select Player",
+        Options = {},
+        CurrentOption = "",
+        Flag = "PlayerDropdown",
+        Callback = function(Option)
+            -- Store selected player
+            Environment.SelectedPlayer = Option
+        end,
+    })
+    
+    -- Refresh Players Button
+    PlayerTab:CreateButton({
+        Name = "Refresh Player List",
+        Callback = function()
+            local PlayersList = {}
+            for _, Player in next, GetPlayers(Players) do
+                if Player ~= LocalPlayer then
+                    table.insert(PlayersList, Player.Name)
+                end
+            end
+            PlayerDropdown:UpdateOptions(PlayersList)
+        end,
+    })
+    
+    -- Blacklist Button
+    PlayerTab:CreateButton({
+        Name = "Blacklist Selected Player",
+        Callback = function()
+            if Environment.SelectedPlayer then
+                Environment:Blacklist(Environment.SelectedPlayer)
+                Rayfield:Notify({
+                    Title = "Player Blacklisted",
+                    Content = Environment.SelectedPlayer .. " has been blacklisted",
+                    Duration = 3,
+                    Image = 4483362458
+                })
+            end
+        end,
+    })
+    
+    -- Whitelist Button
+    PlayerTab:CreateButton({
+        Name = "Whitelist Selected Player",
+        Callback = function()
+            if Environment.SelectedPlayer then
+                Environment:Whitelist(Environment.SelectedPlayer)
+                Rayfield:Notify({
+                    Title = "Player Whitelisted",
+                    Content = Environment.SelectedPlayer .. " has been whitelisted",
+                    Duration = 3,
+                    Image = 4483362458
+                })
+            end
+        end,
+    })
+    
+    -- Blacklisted Players List
+    local BlacklistedLabel = PlayerTab:CreateLabel("Blacklisted Players:")
+    local BlacklistedPlayersLabel = PlayerTab:CreateLabel(table.concat(Environment.Blacklisted, ", "))
+    
+    -- Update blacklisted players list
+    local function UpdateBlacklistedList()
+        BlacklistedPlayersLabel:SetText(table.concat(Environment.Blacklisted, ", "))
+    end
+    
+    -- Settings Tab
+    local SettingsTab = Window:CreateTab("Settings", 4483362458)
+    
+    -- Restart Button
+    SettingsTab:CreateButton({
+        Name = "Restart Aimbot",
+        Callback = function()
+            Environment.Restart()
+            Rayfield:Notify({
+                Title = "Aimbot Restarted",
+                Content = "The aimbot has been successfully restarted",
+                Duration = 3,
+                Image = 4483362458
+            })
+        end,
+    })
+    
+    -- Unload Button
+    SettingsTab:CreateButton({
+        Name = "Unload Aimbot",
+        Callback = function()
+            Environment:Exit()
+            Rayfield:Destroy()
+            Rayfield:Notify({
+                Title = "Aimbot Unloaded",
+                Content = "The aimbot has been successfully unloaded",
+                Duration = 3,
+                Image = 4483362458
+            })
+        end,
+    })
+    
+    -- Load the UI
+    Rayfield:LoadConfiguration()
+    Environment.RayfieldUI.Loaded = true
+    
+    -- Initial refresh of player list
+    local PlayersList = {}
+    for _, Player in next, GetPlayers(Players) do
+        if Player ~= LocalPlayer then
+            table.insert(PlayersList, Player.Name)
+        end
+    end
+    PlayerDropdown:UpdateOptions(PlayersList)
+    
+    return true
+end
+
 local Load = function()
 	OriginalSensitivity = __index(UserInputService, "MouseDeltaSensitivity")
 
@@ -365,6 +815,9 @@ local Load = function()
 		CreateMobileUI()
 		HandleMobileInput()
 	end
+	
+	-- Create Rayfield UI
+	CreateRayfieldUI()
 
 	ServiceConnections.RenderSteppedConnection = Connect(__index(RunService, Environment.DeveloperSettings.UpdateMode), function()
 		local OffsetToMoveDirection, LockPart = Settings.OffsetToMoveDirection, Settings.LockPart
@@ -485,9 +938,14 @@ function Environment.Exit(self) -- METHOD | ExunysDeveloperAimbot:Exit(<void>)
 	if IsMobile and Environment.MobileUI.AimButtonFrame then
 		Environment.MobileUI.AimButtonFrame:Destroy()
 	end
+	
+	-- Destroy Rayfield UI
+	if Rayfield then
+		Rayfield:Destroy()
+	end
 
 	Load = nil; ConvertVector = nil; CancelLock = nil; GetClosestPlayer = nil; GetRainbowColor = nil; FixUsername = nil
-	CreateMobileUI = nil; HandleMobileInput = nil
+	CreateMobileUI = nil; HandleMobileInput = nil; CreateRayfieldUI = nil
 
 	self.FOVCircle:Remove()
 	self.FOVCircleOutline:Remove()
@@ -502,6 +960,11 @@ function Environment.Restart() -- ExunysDeveloperAimbot.Restart(<void>)
 	-- Clean up mobile UI
 	if IsMobile and Environment.MobileUI.AimButtonFrame then
 		Environment.MobileUI.AimButtonFrame:Destroy()
+	end
+	
+	-- Destroy Rayfield UI
+	if Rayfield then
+		Rayfield:Destroy()
 	end
 
 	Load()
@@ -578,6 +1041,20 @@ function Environment.SetMobileButtonTransparency(self, Transparency) -- METHOD |
 	
 	if IsMobile and self.MobileUI.AimButton then
 		self.MobileUI.AimButton.BackgroundTransparency = Transparency
+	end
+end
+
+-- Rayfield UI Functions
+function Environment.ToggleRayfieldUI(self) -- METHOD | ExunysDeveloperAimbot:ToggleRayfieldUI(<void>)
+	assert(self, "EXUNYS_AIMBOT-V3.ToggleRayfieldUI: Missing parameter #1 \"self\" <table>.")
+	
+	if Rayfield then
+		Rayfield:Destroy()
+		Rayfield = nil
+		Window = nil
+		self.RayfieldUI.Loaded = false
+	else
+		CreateRayfieldUI()
 	end
 end
 
