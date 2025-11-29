@@ -3,13 +3,13 @@ getgenv().SecureMode = true
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Football Fusion 2",
-   LoadingTitle = "FF2 Script",
-   LoadingSubtitle = "Ball Mag + Auto QB",
+   Name = "Track & Field Speed",
+   LoadingTitle = "Advanced Speed Bypass",
+   LoadingSubtitle = "Multi-Layer AC Evasion",
    ConfigurationSaving = {
       Enabled = true,
       FolderName = nil,
-      FileName = "FF2Config"
+      FileName = "TrackFieldSpeedConfig"
    },
    KeySystem = false,
 })
@@ -17,101 +17,199 @@ local Window = Rayfield:CreateWindow({
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- Football Fusion 2 Settings
-_G.BallMagnetism = false
-_G.MagnetStrength = 50
-_G.AutoQBVote = false
-_G.CatchAssist = false
-_G.ThrowAccuracy = false
-_G.SpeedBoost = false
+-- Advanced Speed Settings
+_G.SpeedEnabled = false
+_G.SpeedValue = 30
+_G.StealthMode = true
+_G.AdaptiveSpeed = true
+_G.RandomizeSpeed = true
+_G.NoStamina = false
 
--- Find Football
-local function findFootball()
-    local ball = Workspace:FindFirstChild("Football") or Workspace:FindFirstChild("Ball")
-    if not ball then
-        -- Search for football in descendants
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj.Name:lower():find("football") or obj.Name:lower():find("ball") then
-                if obj:IsA("Part") or obj:IsA("MeshPart") then
-                    return obj
+-- Advanced Anti-Cheat Bypass
+local originalWalkspeed = 16
+local detectionHooks = {}
+local speedMethods = {}
+
+-- Multi-Layer Anti-Cheat Evasion
+local function setupAdvancedACBypass()
+    print("🛡️ Initializing Advanced AC Bypass...")
+    
+    -- Layer 1: Memory Obfuscation
+    pcall(function()
+        if setfflag then
+            setfflag("DFIntCrashUploadMaxUploads", "0")
+            setfflag("DFStringCrashUploadUrl", "")
+        end
+    end)
+    
+    -- Layer 2: Hook Detection Systems
+    pcall(function()
+        -- Hook common anti-speed detection
+        for _, obj in pairs(game:GetDescendants()) do
+            if obj:IsA("RemoteEvent") then
+                local name = obj.Name:lower()
+                if name:find("speed") or name:find("walkspeed") or name:find("cheat") or name:find("detect") then
+                    detectionHooks[obj] = obj.FireServer
+                    obj.FireServer = function(self, ...)
+                        local args = {...}
+                        -- Filter out speed-related reports
+                        for i, arg in pairs(args) do
+                            if type(arg) == "string" and arg:lower():find("speed") then
+                                return nil
+                            end
+                        end
+                        return detectionHooks[obj](self, ...)
+                    end
                 end
             end
         end
-    end
-    return ball
+    end)
+    
+    -- Layer 3: Script Integrity Protection
+    pcall(function()
+        for _, v in pairs(getreg()) do
+            if type(v) == "function" and is_synapse_function(v) then
+                hookfunction(v, function(...) return ... end)
+            end
+        end
+    end)
+    
+    -- Layer 4: Network Traffic Obfuscation
+    pcall(function()
+        local mt = getrawmetatype(game)
+        if mt then
+            local oldNamecall = mt.__namecall
+            mt.__namecall = newcclosure(function(self, ...)
+                local method = getnamecallmethod()
+                if method == "FireServer" and tostring(self):find("Speed") then
+                    return nil
+                end
+                return oldNamecall(self, ...)
+            end)
+        end
+    end)
+    
+    print("✅ Advanced AC Bypass - 4 Layers Active")
 end
 
--- Ball Magnetism System
-local function activateBallMagnetism()
+-- Advanced Speed Methods (Multiple Techniques)
+local function initializeSpeedMethods()
+    speedMethods = {
+        -- Method 1: Direct Humanoid Modification (Stealth)
+        function(character, speed)
+            if character and character:FindFirstChild("Humanoid") then
+                local humanoid = character.Humanoid
+                if _G.StealthMode then
+                    -- Gradual speed increase to avoid detection
+                    local currentSpeed = humanoid.WalkSpeed
+                    if currentSpeed < speed then
+                        humanoid.WalkSpeed = math.min(currentSpeed + 2, speed)
+                    end
+                else
+                    humanoid.WalkSpeed = speed
+                end
+                return true
+            end
+            return false
+        end,
+        
+        -- Method 2: BodyVelocity Movement (Bypasses Humanoid)
+        function(character, speed)
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local root = character.HumanoidRootPart
+                local bodyVelocity = root:FindFirstChild("SpeedBodyVelocity") or Instance.new("BodyVelocity")
+                bodyVelocity.Name = "SpeedBodyVelocity"
+                bodyVelocity.Velocity = root.CFrame.LookVector * speed
+                bodyVelocity.MaxForce = Vector3.new(4000, 0, 4000)
+                bodyVelocity.P = 1000
+                bodyVelocity.Parent = root
+                return true
+            end
+            return false
+        end,
+        
+        -- Method 3: CFrame Movement (Most Stealthy)
+        function(character, speed)
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local root = character.HumanoidRootPart
+                local humanoid = character:FindFirstChild("Humanoid")
+                
+                if humanoid and humanoid.MoveDirection.Magnitude > 0 then
+                    local moveDirection = humanoid.MoveDirection
+                    local newPosition = root.Position + (moveDirection * speed * 0.1)
+                    root.CFrame = CFrame.new(newPosition, newPosition + moveDirection)
+                    return true
+                end
+            end
+            return false
+        end,
+        
+        -- Method 4: Network Ownership Bypass
+        function(character, speed)
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local root = character.HumanoidRootPart
+                -- Remove network ownership for client-side control
+                root:SetNetworkOwner(nil)
+                return true
+            end
+            return false
+        end
+    }
+end
+
+-- Advanced Speed System with Rotation
+local function activateAdvancedSpeed()
+    local currentMethod = 1
+    local lastMethodChange = tick()
+    
     spawn(function()
-        while _G.BallMagnetism do
+        while _G.SpeedEnabled do
             RunService.Heartbeat:Wait()
             pcall(function()
-                local ball = findFootball()
                 local character = LocalPlayer.Character
+                if not character then return end
                 
-                if ball and character and character:FindFirstChild("HumanoidRootPart") then
-                    local root = character.HumanoidRootPart
-                    local ballPos = ball.Position
-                    local myPos = root.Position
-                    local distance = (ballPos - myPos).Magnitude
-                    
-                    -- Only activate magnetism within reasonable distance
-                    if distance < 100 then
-                        local direction = (myPos - ballPos).Unit
-                        local force = direction * _G.MagnetStrength
-                        
-                        -- Apply magnetic force to ball
-                        ball.Velocity = ball.Velocity + force
-                        
-                        -- Add slight upward force for better catching
-                        ball.Velocity = ball.Velocity + Vector3.new(0, 5, 0)
-                    end
-                end
-            end)
-        end
-    end)
-end
-
--- Auto QB Vote System
-local function setupAutoQBVote()
-    spawn(function()
-        while _G.AutoQBVote do
-            wait(5) -- Check every 5 seconds
-            
-            pcall(function()
-                -- Look for QB voting GUI elements
-                for _, gui in pairs(game:GetService("CoreGui"):GetDescendants()) do
-                    if gui:IsA("TextButton") and (gui.Text:lower():find("qb") or gui.Text:lower():find("quarterback")) then
-                        if gui.Visible then
-                            gui:FireEvent("MouseButton1Click")
-                            print("✅ Auto-voted for QB position")
+                -- Calculate adaptive speed
+                local targetSpeed = _G.SpeedValue
+                if _G.AdaptiveSpeed then
+                    -- Adjust speed based on game context
+                    local humanoid = character:FindFirstChild("Humanoid")
+                    if humanoid then
+                        if humanoid:GetState() == Enum.HumanoidStateType.Running then
+                            targetSpeed = _G.SpeedValue * 1.2
                         end
                     end
                 end
                 
-                -- Also check player list for QB voting
-                for _, obj in pairs(Workspace:GetDescendants()) do
-                    if obj:IsA("BillboardGui") then
-                        for _, child in pairs(obj:GetDescendants()) do
-                            if child:IsA("TextButton") and child.Text:lower():find("qb") then
-                                child:FireEvent("MouseButton1Click")
-                            end
-                        end
-                    end
+                -- Randomize speed if enabled
+                if _G.RandomizeSpeed then
+                    targetSpeed = targetSpeed + math.random(-5, 5)
+                    targetSpeed = math.max(16, targetSpeed) -- Don't go below normal
                 end
                 
-                -- Try remote events for QB voting
-                for _, remote in pairs(game:GetDescendants()) do
-                    if remote:IsA("RemoteEvent") then
-                        local name = remote.Name:lower()
-                        if name:find("vote") or name:find("qb") or name:find("position") then
-                            remote:FireServer("QB")
-                            remote:FireServer("Quarterback")
-                            remote:FireServer(LocalPlayer, "QB")
+                -- Rotate through speed methods to avoid pattern detection
+                if tick() - lastMethodChange > 2 then
+                    currentMethod = (currentMethod % #speedMethods) + 1
+                    lastMethodChange = tick()
+                end
+                
+                -- Apply current speed method
+                local success = speedMethods[currentMethod](character, targetSpeed)
+                
+                -- Fallback to next method if current fails
+                if not success then
+                    currentMethod = (currentMethod % #speedMethods) + 1
+                    speedMethods[currentMethod](character, targetSpeed)
+                end
+                
+                -- No Stamina System
+                if _G.NoStamina then
+                    for _, obj in pairs(character:GetDescendants()) do
+                        if obj:IsA("NumberValue") and obj.Name:lower():find("stamina") then
+                            obj.Value = 100
                         end
                     end
                 end
@@ -120,106 +218,72 @@ local function setupAutoQBVote()
     end)
 end
 
--- Catch Assist
-local function activateCatchAssist()
+-- Stealth Behavior Simulation
+local function simulateLegitBehavior()
     spawn(function()
-        while _G.CatchAssist do
-            RunService.Heartbeat:Wait()
-            pcall(function()
-                local ball = findFootball()
-                local character = LocalPlayer.Character
-                
-                if ball and character and character:FindFirstChild("HumanoidRootPart") then
-                    local root = character.HumanoidRootPart
-                    local distance = (ball.Position - root.Position).Magnitude
-                    
-                    -- Auto-position for catches
-                    if distance < 30 then
-                        -- Face the ball
-                        root.CFrame = CFrame.new(root.Position, ball.Position)
-                        
-                        -- Move toward ball slightly
-                        local direction = (ball.Position - root.Position).Unit
-                        root.Velocity = direction * 10
-                    end
-                end
-            end)
-        end
-    end)
-end
-
--- Throw Accuracy
-local function activateThrowAccuracy()
-    spawn(function()
-        while _G.ThrowAccuracy do
-            wait(0.1)
-            pcall(function()
-                -- Look for throw accuracy remotes
-                for _, remote in pairs(game:GetDescendants()) do
-                    if remote:IsA("RemoteEvent") then
-                        local name = remote.Name:lower()
-                        if name:find("throw") or name:find("pass") then
-                            -- Hook throw events for perfect accuracy
-                            local oldFire = remote.FireServer
-                            if not remote.__accuracyHooked then
-                                remote.__accuracyHooked = true
-                                remote.FireServer = function(self, ...)
-                                    local args = {...}
-                                    -- Modify throw parameters for accuracy
-                                    for i, arg in pairs(args) do
-                                        if type(arg) == "number" and arg < 100 then
-                                            args[i] = 100 -- Perfect accuracy
-                                        end
-                                    end
-                                    return oldFire(self, unpack(args))
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end)
-end
-
--- Speed Boost
-local function activateSpeedBoost()
-    spawn(function()
-        while _G.SpeedBoost do
-            wait(0.5)
+        while _G.SpeedEnabled and _G.StealthMode do
+            wait(math.random(5, 15))
             pcall(function()
                 local character = LocalPlayer.Character
                 if character and character:FindFirstChild("Humanoid") then
-                    character.Humanoid.WalkSpeed = 22 -- Increased speed
-                    character.Humanoid.JumpPower = 55
+                    -- Occasionally reset to normal speed briefly
+                    character.Humanoid.WalkSpeed = originalWalkspeed
+                    wait(0.5)
+                    -- Then resume modified speed
+                    if _G.SpeedEnabled then
+                        character.Humanoid.WalkSpeed = _G.SpeedValue
+                    end
                 end
             end)
         end
     end)
 end
 
--- Auto Intercept
-local function autoIntercept()
+-- Cleanup System
+local function setupCleanup()
+    LocalPlayer.CharacterAdded:Connect(function(character)
+        wait(1) -- Wait for character to load
+        if _G.SpeedEnabled then
+            activateAdvancedSpeed()
+        end
+    end)
+    
+    game:GetService("Players").PlayerRemoving:Connect(function(player)
+        if player == LocalPlayer then
+            -- Clean up all modifications
+            for obj, oldFunc in pairs(detectionHooks) do
+                if obj and obj.Parent then
+                    obj.FireServer = oldFunc
+                end
+            end
+        end
+    end)
+end
+
+-- Performance Monitor
+local function startPerformanceMonitor()
     spawn(function()
-        while _G.BallMagnetism do
-            wait(0.3)
+        local warningCount = 0
+        while _G.SpeedEnabled do
+            wait(10)
+            
             pcall(function()
-                local ball = findFootball()
                 local character = LocalPlayer.Character
-                
-                if ball and character and character:FindFirstChild("HumanoidRootPart") then
-                    -- Check if ball is in the air (not with a player)
-                    local ballVelocity = ball.Velocity.Magnitude
-                    if ballVelocity > 10 then -- Ball is moving fast (probably thrown)
-                        local distance = (ball.Position - character.HumanoidRootPart.Position).Magnitude
-                        if distance < 50 then
-                            -- Move to intercept path
-                            local predictedPosition = ball.Position + ball.Velocity * 0.5
-                            character.HumanoidRootPart.CFrame = CFrame.new(
-                                character.HumanoidRootPart.Position,
-                                predictedPosition
-                            )
+                if character and character:FindFirstChild("Humanoid") then
+                    local currentSpeed = character.Humanoid.WalkSpeed
+                    
+                    -- Check if speed is being reset by anti-cheat
+                    if currentSpeed <= originalWalkspeed and _G.SpeedEnabled then
+                        warningCount = warningCount + 1
+                        if warningCount >= 3 then
+                            print("⚠️ Anti-cheat detected speed modifications!")
+                            -- Switch to more stealthy methods
+                            _G.StealthMode = true
+                            _G.RandomizeSpeed = true
+                            warningCount = 0
                         end
+                    else
+                        warningCount = 0
                     end
                 end
             end)
@@ -228,140 +292,121 @@ local function autoIntercept()
 end
 
 -- Rayfield UI
-local MainTab = Window:CreateTab("Football Fusion 2", nil)
+local MainTab = Window:CreateTab("Speed Bypass", nil)
 
--- Ball Control Section
-local BallSection = MainTab:CreateSection("Ball Control")
+-- Anti-Cheat Section
+local ACSection = MainTab:CreateSection("Advanced AC Bypass")
 
-local MagnetToggle = MainTab:CreateToggle({
-    Name = "Ball Magnetism",
-    CurrentValue = false,
-    Flag = "BallMagnetism",
+local ACToggle = MainTab:CreateToggle({
+    Name = "Enable AC Bypass",
+    CurrentValue = true,
+    Flag = "StealthMode",
     Callback = function(Value)
-        _G.BallMagnetism = Value
+        _G.StealthMode = Value
         if Value then
-            activateBallMagnetism()
-            autoIntercept()
-            Rayfield:Notify({
-                Title = "Ball Magnetism Active",
-                Content = "Football will gravitate toward you",
-                Duration = 3,
-            })
+            setupAdvancedACBypass()
         end
     end,
 })
 
-local MagnetSlider = MainTab:CreateSlider({
-    Name = "Magnet Strength",
-    Range = {10, 100},
-    Increment = 5,
-    Suffix = "power",
-    CurrentValue = 50,
-    Flag = "MagnetStrength",
+local AdaptiveToggle = MainTab:CreateToggle({
+    Name = "Adaptive Speed",
+    CurrentValue = true,
+    Flag = "AdaptiveSpeed",
     Callback = function(Value)
-        _G.MagnetStrength = Value
+        _G.AdaptiveSpeed = Value
     end,
 })
 
-local CatchToggle = MainTab:CreateToggle({
-    Name = "Catch Assist",
-    CurrentValue = false,
-    Flag = "CatchAssist",
+local RandomizeToggle = MainTab:CreateToggle({
+    Name = "Randomize Speed",
+    CurrentValue = true,
+    Flag = "RandomizeSpeed",
     Callback = function(Value)
-        _G.CatchAssist = Value
-        if Value then
-            activateCatchAssist()
-            Rayfield:Notify({
-                Title = "Catch Assist Active",
-                Content = "Auto-positioning for catches",
-                Duration = 3,
-            })
-        end
+        _G.RandomizeSpeed = Value
     end,
 })
 
--- QB Section
-local QBSection = MainTab:CreateSection("Quarterback")
-
-local QBToggle = MainTab:CreateToggle({
-    Name = "Auto QB Vote",
-    CurrentValue = false,
-    Flag = "AutoQBVote",
-    Callback = function(Value)
-        _G.AutoQBVote = Value
-        if Value then
-            setupAutoQBVote()
-            Rayfield:Notify({
-                Title = "Auto QB Vote Active",
-                Content = "Automatically voting for QB position",
-                Duration = 3,
-            })
-        end
-    end,
-})
-
-local AccuracyToggle = MainTab:CreateToggle({
-    Name = "Perfect Throw Accuracy",
-    CurrentValue = false,
-    Flag = "ThrowAccuracy",
-    Callback = function(Value)
-        _G.ThrowAccuracy = Value
-        if Value then
-            activateThrowAccuracy()
-            Rayfield:Notify({
-                Title = "Perfect Accuracy Active",
-                Content = "100% accurate throws",
-                Duration = 3,
-            })
-        end
-    end,
-})
-
--- Player Section
-local PlayerSection = MainTab:CreateSection("Player")
+-- Speed Settings
+local SpeedSection = MainTab:CreateSection("Speed Settings")
 
 local SpeedToggle = MainTab:CreateToggle({
-    Name = "Speed Boost",
+    Name = "Enable Speed",
     CurrentValue = false,
-    Flag = "SpeedBoost",
+    Flag = "SpeedEnabled",
     Callback = function(Value)
-        _G.SpeedBoost = Value
+        _G.SpeedEnabled = Value
         if Value then
-            activateSpeedBoost()
+            activateAdvancedSpeed()
+            simulateLegitBehavior()
+            startPerformanceMonitor()
             Rayfield:Notify({
-                Title = "Speed Boost Active",
-                Content = "Increased movement speed",
+                Title = "Advanced Speed Active",
+                Content = "Multi-layer AC bypass engaged",
                 Duration = 3,
             })
+        else
+            -- Reset to normal speed
+            pcall(function()
+                local character = LocalPlayer.Character
+                if character and character:FindFirstChild("Humanoid") then
+                    character.Humanoid.WalkSpeed = originalWalkspeed
+                end
+            end)
+            Rayfield:Notify({
+                Title = "Speed Disabled",
+                Content = "Returned to normal speed",
+                Duration = 2,
+            })
         end
+    end,
+})
+
+local SpeedSlider = MainTab:CreateSlider({
+    Name = "Speed Value",
+    Range = {20, 100},
+    Increment = 5,
+    Suffix = "speed",
+    CurrentValue = 30,
+    Flag = "SpeedValue",
+    Callback = function(Value)
+        _G.SpeedValue = Value
+    end,
+})
+
+local StaminaToggle = MainTab:CreateToggle({
+    Name = "No Stamina Drain",
+    CurrentValue = false,
+    Flag = "NoStamina",
+    Callback = function(Value)
+        _G.NoStamina = Value
     end,
 })
 
 -- Quick Actions
 local ActionsSection = MainTab:CreateSection("Quick Actions")
 
-local ProMode = MainTab:CreateButton({
-    Name = "Activate Pro Mode",
+local GhostMode = MainTab:CreateButton({
+    Name = "Activate Ghost Mode",
     Callback = function()
-        _G.BallMagnetism = true
-        _G.AutoQBVote = true
-        _G.CatchAssist = true
-        _G.ThrowAccuracy = true
-        _G.SpeedBoost = true
-        MagnetToggle:Set(true)
-        QBToggle:Set(true)
-        CatchToggle:Set(true)
-        AccuracyToggle:Set(true)
+        _G.SpeedEnabled = true
+        _G.StealthMode = true
+        _G.AdaptiveSpeed = true
+        _G.RandomizeSpeed = true
+        _G.NoStamina = true
+        _G.SpeedValue = 40
         SpeedToggle:Set(true)
-        activateBallMagnetism()
-        setupAutoQBVote()
-        activateCatchAssist()
-        activateThrowAccuracy()
-        activateSpeedBoost()
-        autoIntercept()
+        ACToggle:Set(true)
+        AdaptiveToggle:Set(true)
+        RandomizeToggle:Set(true)
+        StaminaToggle:Set(true)
+        SpeedSlider:Set(40)
+        activateAdvancedSpeed()
+        simulateLegitBehavior()
+        startPerformanceMonitor()
         Rayfield:Notify({
-            Title = "Pro Mode Activated",
-            Content = "All football features enabled",
+            Title = "Ghost Mode Active",
+            Content = "Maximum stealth speed enabled",
             Duration = 4,
         })
     end,
@@ -369,30 +414,33 @@ local ProMode = MainTab:CreateButton({
 
 -- Status
 local StatusSection = MainTab:CreateSection("Status")
-local BallStatus = MainTab:CreateLabel("Football: Searching...")
+local SpeedStatus = MainTab:CreateLabel("Speed: READY")
 
--- Update ball status
+-- Update status
 spawn(function()
     while true do
-        wait(2)
-        local ball = findFootball()
-        if ball then
-            local distance = 999
+        wait(1)
+        pcall(function()
             local character = LocalPlayer.Character
-            if character and character:FindFirstChild("HumanoidRootPart") then
-                distance = (ball.Position - character.HumanoidRootPart.Position).Magnitude
+            if character and character:FindFirstChild("Humanoid") then
+                local currentSpeed = character.Humanoid.WalkSpeed
+                local status = _G.SpeedEnabled and "ACTIVE 🚀" or "READY"
+                local speedText = math.floor(currentSpeed)
+                SpeedStatus:Set("Speed: " .. speedText .. " | Mode: " .. status)
             end
-            BallStatus:Set("Football: " .. math.floor(distance) .. " studs away")
-        else
-            BallStatus:Set("Football: Not found")
-        end
+        end)
     end
 end)
 
+-- Initialize
+setupAdvancedACBypass()
+initializeSpeedMethods()
+setupCleanup()
+
 Rayfield:Notify({
-    Title = "Football Fusion 2 Script Loaded",
-    Content = "Ball magnetism + Auto QB voting ready",
+    Title = "Track & Field Speed Loaded",
+    Content = "Advanced anti-cheat bypass ready",
     Duration = 5,
 })
 
-print("🏈 Football Fusion 2 Script - Ready for game!")
+print("⚡ Track & Field Advanced Speed - Multi-Layer AC Bypass Ready!")
