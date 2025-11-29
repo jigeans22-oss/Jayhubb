@@ -3,13 +3,13 @@ getgenv().SecureMode = true
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Mobile MyCourt Hacks",
-   LoadingTitle = "Mobile Basketball",
-   LoadingSubtitle = "Touch Screen Optimized",
+   Name = "RH2 No Pump Fake",
+   LoadingTitle = "Anti Pump Fake",
+   LoadingSubtitle = "Real Shots Only",
    ConfigurationSaving = {
       Enabled = true,
       FolderName = nil,
-      FileName = "MobileCourtConfig"
+      FileName = "NoPumpConfig"
    },
    KeySystem = false,
 })
@@ -18,229 +18,44 @@ local Window = Rayfield:CreateWindow({
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local GuiService = game:GetService("GuiService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Settings
-_G.AutoShoot = false
-_G.AutoGreen = true
-_G.ShotDelay = 0.3
-_G.ExtendShotRange = false
-_G.ShotRangeMultiplier = 2.0
-_G.AlwaysMakeShots = true
-_G.MobileUIEnabled = false
+_G.RealShotsOnly = true
+_G.AutoRelease = true
+_G.ShotPower = 100
+_G.PreventPumpFake = true
 
--- Mobile UI Elements
-local mobileScreenGui = nil
-local mobileFrame = nil
-local touchButtons = {}
-
--- Detect if mobile
-local function isMobile()
-    return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
-end
-
--- Create Mobile Touch UI
-local function createMobileUI()
-    if mobileScreenGui then mobileScreenGui:Destroy() end
-    
-    mobileScreenGui = Instance.new("ScreenGui")
-    mobileScreenGui.Name = "MobileBasketballUI"
-    mobileScreenGui.Parent = game.CoreGui
-    mobileScreenGui.ResetOnSpawn = false
-    
-    -- Main Control Panel
-    local controlFrame = Instance.new("Frame")
-    controlFrame.Size = UDim2.new(0, 200, 0, 250)
-    controlFrame.Position = UDim2.new(0, 10, 0.5, -125)
-    controlFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    controlFrame.BackgroundTransparency = 0.3
-    controlFrame.BorderSizePixel = 0
-    controlFrame.Parent = mobileScreenGui
-    
-    -- Title
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 30)
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    title.Text = "Mobile Controls"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 14
-    title.Parent = controlFrame
-    
-    -- Toggle UI Button
-    local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(1, -10, 0, 25)
-    toggleBtn.Position = UDim2.new(0, 5, 0, 35)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    toggleBtn.Text = "Hide Panel"
-    toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    toggleBtn.TextSize = 12
-    toggleBtn.Parent = controlFrame
-    
-    toggleBtn.MouseButton1Click:Connect(function()
-        controlFrame.Visible = not controlFrame.Visible
-        toggleBtn.Text = controlFrame.Visible and "Hide Panel" or "Show Panel"
-    end)
-    
-    -- Mobile Control Buttons
-    local mobileButtons = {
-        {"Auto-Shoot", function()
-            _G.AutoShoot = not _G.AutoShoot
-            if _G.AutoShoot then
-                setupMobileAutoShoot()
-            end
-            updateMobileUI()
-        end},
-        {"Auto-Green", function()
-            _G.AutoGreen = not _G.AutoGreen
-            if _G.AutoGreen then
-                setupMobileAutoGreen()
-            end
-            updateMobileUI()
-        end},
-        {"Extend Range", function()
-            _G.ExtendShotRange = not _G.ExtendShotRange
-            if _G.ExtendShotRange then
-                setupMobileRange()
-            end
-            updateMobileUI()
-        end},
-        {"Quick Shoot", quickMobileShot},
-        {"God Mode", activateMobileGodMode}
-    }
-    
-    for i, btnData in ipairs(mobileButtons) do
-        local btnName, btnFunc = btnData[1], btnData[2]
-        local button = Instance.new("TextButton")
-        button.Size = UDim2.new(1, -10, 0, 30)
-        button.Position = UDim2.new(0, 5, 0, 65 + (i * 35))
-        button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-        button.Text = btnName
-        button.TextColor3 = Color3.fromRGB(255, 255, 255)
-        button.TextSize = 12
-        button.Parent = controlFrame
-        button.MouseButton1Click = btnFunc
-        
-        touchButtons[btnName] = button
-    end
-    
-    -- Status Display
-    local statusLabel = Instance.new("TextLabel")
-    statusLabel.Size = UDim2.new(1, -10, 0, 20)
-    statusLabel.Position = UDim2.new(0, 5, 0, 240)
-    statusLabel.BackgroundTransparency = 1
-    statusLabel.Text = "Ready for MyCourt"
-    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-    statusLabel.TextSize = 11
-    statusLabel.Parent = controlFrame
-    touchButtons["Status"] = statusLabel
-    
-    _G.MobileUIEnabled = true
-    updateMobileUI()
-end
-
--- Update Mobile UI Colors
-local function updateMobileUI()
-    if not touchButtons then return end
-    
-    local statusMap = {
-        ["Auto-Shoot"] = _G.AutoShoot,
-        ["Auto-Green"] = _G.AutoGreen,
-        ["Extend Range"] = _G.ExtendShotRange
-    }
-    
-    for btnName, button in pairs(touchButtons) do
-        if statusMap[btnName] ~= nil then
-            if statusMap[btnName] then
-                button.BackgroundColor3 = Color3.fromRGB(0, 150, 0) -- Green when active
-            else
-                button.BackgroundColor3 = Color3.fromRGB(70, 70, 70) -- Gray when inactive
-            end
-        end
-    end
-    
-    if touchButtons["Status"] then
-        local activeCount = (_G.AutoShoot and 1 or 0) + (_G.AutoGreen and 1 or 0) + (_G.ExtendShotRange and 1 or 0)
-        touchButtons["Status"].Text = activeCount .. "/3 Features Active"
-        touchButtons["Status"].TextColor3 = activeCount > 0 and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 50, 50)
-    end
-end
-
--- Mobile Auto-Shoot System
-local function setupMobileAutoShoot()
+-- Fix for RH2 Pump Fake Issue
+local function fixPumpFake()
     spawn(function()
-        while _G.AutoShoot do
-            wait(_G.ShotDelay)
-            pcall(function()
-                -- Method 1: Find and click shoot buttons (mobile UI)
-                for _, obj in pairs(game:GetDescendants()) do
-                    if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-                        if obj.Text:lower():find("shoot") or obj.Name:lower():find("shoot") or obj.Name:lower():find("shot") then
-                            if obj.Visible then
-                                -- Simulate mobile tap
-                                obj:FireEvent("MouseButton1Click")
-                                obj:FireEvent("Activated")
-                            end
-                        end
-                    end
-                end
-                
-                -- Method 2: Trigger touch events for mobile
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("Part") and (obj.Name:lower():find("shoot") or obj.Name:lower():find("trigger")) then
-                        local character = LocalPlayer.Character
-                        if character and character:FindFirstChild("HumanoidRootPart") then
-                            -- Simulate touch
-                            firetouchinterest(character.HumanoidRootPart, obj, 0)
-                            wait()
-                            firetouchinterest(character.HumanoidRootPart, obj, 1)
-                        end
-                    end
-                end
-                
-                -- Method 3: Direct ball shooting for mobile
-                local ball = workspace:FindFirstChild("Basketball") or workspace:FindFirstChild("Ball")
-                if ball then
-                    local hoop = workspace:FindFirstChild("Hoop") or workspace:FindFirstChild("Basket")
-                    if hoop then
-                        -- Auto-shoot the ball
-                        local direction = (hoop.Position - ball.Position).Unit
-                        local power = 40
-                        if _G.ExtendShotRange then
-                            power = power * _G.ShotRangeMultiplier
-                        end
-                        ball.Velocity = direction * power
-                    end
-                end
-            end)
-        end
-    end)
-end
-
--- Mobile Auto-Green System
-local function setupMobileAutoGreen()
-    spawn(function()
-        while _G.AutoGreen or _G.AlwaysMakeShots do
+        while _G.PreventPumpFake do
             wait(0.1)
             pcall(function()
-                -- Hook all remote events for mobile
+                -- Method 1: Hook the shoot state system
                 for _, obj in pairs(game:GetDescendants()) do
-                    if obj:IsA("RemoteEvent") then
+                    if obj:IsA("RemoteEvent") and (obj.Name:lower():find("shoot") or obj.Name:lower():find("shot")) then
                         local oldFireServer = obj.FireServer
-                        if not obj.__mobileHooked then
-                            obj.__mobileHooked = true
+                        if not obj.__pumpFixed then
+                            obj.__pumpFixed = true
                             obj.FireServer = function(self, ...)
                                 local args = {...}
                                 
-                                if _G.AutoGreen or _G.AlwaysMakeShots then
-                                    for i, arg in pairs(args) do
-                                        if type(arg) == "boolean" then
-                                            args[i] = true
-                                        elseif type(arg) == "number" and arg < 100 then
-                                            args[i] = 100
+                                -- Convert pump fake to real shot
+                                for i, arg in pairs(args) do
+                                    if type(arg) == "string" then
+                                        if arg:lower():find("fake") or arg:lower():find("pump") then
+                                            args[i] = "shoot" -- Change fake to real shoot
                                         end
+                                    elseif type(arg) == "boolean" then
+                                        args[i] = true -- Force real shot
                                     end
+                                end
+                                
+                                -- Add shot power if missing
+                                if #args == 1 and type(args[1]) == "string" then
+                                    table.insert(args, _G.ShotPower) -- Add power parameter
+                                    table.insert(args, true) -- Add success parameter
                                 end
                                 
                                 return oldFireServer(self, unpack(args))
@@ -249,17 +64,16 @@ local function setupMobileAutoGreen()
                     end
                 end
                 
-                -- Mobile ball guidance
-                local ball = workspace:FindFirstChild("Basketball") or workspace:FindFirstChild("Ball")
-                if ball and (_G.AutoGreen or _G.AlwaysMakeShots) then
-                    local hoop = workspace:FindFirstChild("Hoop") or workspace:FindFirstChild("Basket")
-                    if hoop then
-                        -- Guide ball toward hoop (mobile-friendly)
-                        local direction = (hoop.Position - ball.Position).Unit
-                        local distance = (hoop.Position - ball.Position).Magnitude
-                        
-                        if distance < 80 then
-                            ball.Velocity = ball.Velocity + direction * 8
+                -- Method 2: Direct character state manipulation
+                local character = LocalPlayer.Character
+                if character then
+                    local humanoid = character:FindFirstChild("Humanoid")
+                    if humanoid then
+                        -- Force out of any fake/animation states
+                        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                            if track.Name:lower():find("fake") or track.Name:lower():find("pump") then
+                                track:Stop()
+                            end
                         end
                     end
                 end
@@ -268,178 +82,213 @@ local function setupMobileAutoGreen()
     end)
 end
 
--- Mobile Range Extension
-local function setupMobileRange()
+-- Auto-Release to prevent pump fakes
+local function setupAutoRelease()
     spawn(function()
-        while _G.ExtendShotRange do
-            wait(0.3)
+        while _G.AutoRelease do
+            wait(0.05)
             pcall(function()
-                -- Mobile character adjustments
+                -- Detect when player starts shooting and force release
                 local character = LocalPlayer.Character
                 if character then
+                    -- Check for shoot animations or states
                     local humanoid = character:FindFirstChild("Humanoid")
                     if humanoid then
-                        humanoid.JumpPower = 50
-                        humanoid.WalkSpeed = 20
+                        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                            if track.Name:lower():find("shoot") or track.Name:lower():find("shot") then
+                                -- Force shot completion
+                                for _, obj in pairs(game:GetDescendants()) do
+                                    if obj:IsA("RemoteEvent") and obj.Name:lower():find("release") then
+                                        obj:FireServer("release", _G.ShotPower, true)
+                                    end
+                                end
+                            end
+                        end
                     end
-                end
-                
-                -- Mobile ball physics
-                local ball = workspace:FindFirstChild("Basketball") or workspace:FindFirstChild("Ball")
-                if ball then
-                    local bodyForce = ball:FindFirstChild("BodyForce") or Instance.new("BodyForce")
-                    bodyForce.Force = Vector3.new(0, workspace.Gravity * -0.25, 0)
-                    bodyForce.Parent = ball
                 end
             end)
         end
     end)
 end
 
--- Quick Mobile Shot (Single Tap)
-local function quickMobileShot()
-    pcall(function()
-        local ball = workspace:FindFirstChild("Basketball") or workspace:FindFirstChild("Ball")
-        if ball then
-            local hoop = workspace:FindFirstChild("Hoop") or workspace:FindFirstChild("Basket")
-            if hoop then
-                -- Perfect shot calculation for mobile
-                local targetPos = hoop.Position + Vector3.new(0, 4, 0)
-                local direction = (targetPos - ball.Position).Unit
-                local power = 45
+-- Direct Ball Control (Bypass pump fake entirely)
+local function directBallControl()
+    spawn(function()
+        while _G.RealShotsOnly do
+            wait(0.1)
+            pcall(function()
+                local ball = workspace:FindFirstChild("Basketball") or workspace:FindFirstChild("Ball")
+                local character = LocalPlayer.Character
                 
-                if _G.ExtendShotRange then
-                    power = power * _G.ShotRangeMultiplier
+                if ball and character then
+                    local root = character:FindFirstChild("HumanoidRootPart")
+                    local hoop = workspace:FindFirstChild("Hoop") or workspace:FindFirstChild("Basket")
+                    
+                    if root and hoop then
+                        -- Check if player is trying to shoot (character facing hoop, etc.)
+                        local directionToHoop = (hoop.Position - root.Position).Unit
+                        local characterDirection = root.CFrame.LookVector
+                        
+                        -- If player is facing hoop and ball is close, auto-shoot
+                        if directionToHoop:Dot(characterDirection) > 0.7 and (ball.Position - root.Position).Magnitude < 10 then
+                            local shotDirection = (hoop.Position - ball.Position).Unit
+                            ball.Velocity = shotDirection * _G.ShotPower
+                        end
+                    end
                 end
-                
-                ball.Velocity = direction * power
-                
-                if touchButtons["Status"] then
-                    touchButtons["Status"].Text = "Quick Shot Fired!"
-                    wait(2)
-                    updateMobileUI()
-                end
+            end)
+        end
+    end)
+end
+
+-- Hook Input to Force Real Shots
+local function hookInputForRealShots()
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        -- Detect shoot button press
+        if input.KeyCode == Enum.KeyCode.E or input.KeyCode == Enum.KeyCode.F or input.KeyCode == Enum.KeyCode.ButtonA then
+            if _G.RealShotsOnly then
+                wait(0.1) -- Small delay to let game process input
+                pcall(function()
+                    -- Force a real shot after any input
+                    for _, obj in pairs(game:GetDescendants()) do
+                        if obj:IsA("RemoteEvent") and obj.Name:lower():find("shoot") then
+                            -- Send real shot command with full power
+                            obj:FireServer("shoot", _G.ShotPower, true, LocalPlayer)
+                        end
+                    end
+                    
+                    -- Also trigger release if needed
+                    for _, obj in pairs(game:GetDescendants()) do
+                        if obj:IsA("RemoteEvent") and obj.Name:lower():find("release") then
+                            obj:FireServer("release", _G.ShotPower, true)
+                        end
+                    end
+                end)
             end
         end
     end)
 end
 
--- Mobile God Mode
-local function activateMobileGodMode()
-    _G.AutoShoot = true
-    _G.AutoGreen = true
-    _G.ExtendShotRange = true
-    _G.AlwaysMakeShots = true
-    
-    setupMobileAutoShoot()
-    setupMobileAutoGreen()
-    setupMobileRange()
-    
-    updateMobileUI()
-    
-    if touchButtons["Status"] then
-        touchButtons["Status"].Text = "GOD MODE ACTIVATED!"
-        touchButtons["Status"].TextColor3 = Color3.fromRGB(255, 215, 0)
-    end
-end
+-- Rayfield UI
+local MainTab = Window:CreateTab("No Pump Fake", nil)
+local FixSection = MainTab:CreateSection("Pump Fake Fixes")
 
--- Mobile Touch Detection
-local function setupMobileTouchDetection()
-    -- Detect screen touches that might be shoot attempts
-    UserInputService.TouchStarted:Connect(function(touch, gameProcessed)
-        if gameProcessed then return end
-        
-        -- If auto-green is on, enhance any potential shot
-        if _G.AutoGreen then
-            pcall(function()
-                local ball = workspace:FindFirstChild("Basketball") or workspace:FindFirstChild("Ball")
-                if ball then
-                    local hoop = workspace:FindFirstChild("Hoop") or workspace:FindFirstChild("Basket")
-                    if hoop then
-                        -- Perfect the shot
-                        local direction = (hoop.Position - ball.Position).Unit
-                        ball.Velocity = direction * 35
-                    end
-                end
-            end)
-        end
-    end)
-end
-
--- Rayfield UI (for desktop users who might see this)
-local MainTab = Window:CreateTab("Mobile Hacks", nil)
-local MobileSection = MainTab:CreateSection("Mobile Controls")
-
-local MobileStatus = MainTab:CreateLabel("Device: Detecting...")
-
-local AutoShootToggle = MainTab:CreateToggle({
-    Name = "Auto-Shoot (Mobile)",
-    CurrentValue = false,
-    Flag = "AutoShoot",
-    Callback = function(Value)
-        _G.AutoShoot = Value
-        if Value then
-            setupMobileAutoShoot()
-        end
-        updateMobileUI()
-    end,
-})
-
-local AutoGreenToggle = MainTab:CreateToggle({
-    Name = "Auto-Green (Mobile)",
+local PumpFixToggle = MainTab:CreateToggle({
+    Name = "Prevent Pump Fakes",
     CurrentValue = true,
-    Flag = "AutoGreen",
+    Flag = "PreventPumpFake",
     Callback = function(Value)
-        _G.AutoGreen = Value
+        _G.PreventPumpFake = Value
         if Value then
-            setupMobileAutoGreen()
+            fixPumpFake()
+            Rayfield:Notify({
+                Title = "Pump Fake Protection",
+                Content = "All shots will be real shots",
+                Duration = 3,
+            })
         end
-        updateMobileUI()
     end,
 })
 
-local RangeToggle = MainTab:CreateToggle({
-    Name = "Extend Range (Mobile)",
-    CurrentValue = false,
-    Flag = "ExtendShotRange",
+local RealShotsToggle = MainTab:CreateToggle({
+    Name = "Real Shots Only",
+    CurrentValue = true,
+    Flag = "RealShotsOnly",
     Callback = function(Value)
-        _G.ExtendShotRange = Value
+        _G.RealShotsOnly = Value
         if Value then
-            setupMobileRange()
+            directBallControl()
+            Rayfield:Notify({
+                Title = "Real Shots Only",
+                Content = "No more pump fakes",
+                Duration = 3,
+            })
         end
-        updateMobileUI()
     end,
 })
 
--- Initialize based on device
-spawn(function()
-    wait(2)
-    if isMobile() then
-        MobileStatus:Set("Device: Mobile ✓ Touch UI Created")
-        createMobileUI()
-        setupMobileTouchDetection()
+local AutoReleaseToggle = MainTab:CreateToggle({
+    Name = "Auto-Release",
+    CurrentValue = true,
+    Flag = "AutoRelease",
+    Callback = function(Value)
+        _G.AutoRelease = Value
+        if Value then
+            setupAutoRelease()
+            Rayfield:Notify({
+                Title = "Auto-Release",
+                Content = "Automatic shot completion",
+                Duration = 3,
+            })
+        end
+    end,
+})
+
+local ShotPowerSlider = MainTab:CreateSlider({
+    Name = "Shot Power",
+    Range = {50, 150},
+    Increment = 5,
+    Suffix = "power",
+    CurrentValue = 100,
+    Flag = "ShotPower",
+    Callback = function(Value)
+        _G.ShotPower = Value
+    end,
+})
+
+-- Quick Fix Button
+local QuickFixSection = MainTab:CreateSection("Quick Fixes")
+
+local ForceRealShots = MainTab:CreateButton({
+    Name = "Force Real Shot Now",
+    Callback = function()
+        pcall(function()
+            for _, obj in pairs(game:GetDescendants()) do
+                if obj:IsA("RemoteEvent") and obj.Name:lower():find("shoot") then
+                    obj:FireServer("shoot", _G.ShotPower, true)
+                end
+            end
+            Rayfield:Notify({
+                Title = "Forced Real Shot",
+                Content = "Sent real shot command",
+                Duration = 2,
+            })
+        end)
+    end,
+})
+
+local AntiPumpMode = MainTab:CreateButton({
+    Name = "Activate Anti-Pump Mode",
+    Callback = function()
+        _G.PreventPumpFake = true
+        _G.RealShotsOnly = true
+        _G.AutoRelease = true
+        PumpFixToggle:Set(true)
+        RealShotsToggle:Set(true)
+        AutoReleaseToggle:Set(true)
+        fixPumpFake()
+        directBallControl()
+        setupAutoRelease()
         Rayfield:Notify({
-            Title = "Mobile Mode Activated",
-            Content = "Touch controls enabled for MyCourt",
-            Duration = 5,
-        })
-    else
-        MobileStatus:Set("Device: Desktop - Using Standard UI")
-        Rayfield:Notify({
-            Title = "Desktop Mode",
-            Content = "Using standard interface",
+            Title = "Anti-Pump Mode Active",
+            Content = "All pump fake protections enabled",
             Duration = 3,
         })
-    end
-    
-    -- Start auto-green by default
-    setupMobileAutoGreen()
-end)
+    end,
+})
+
+-- Initialize
+fixPumpFake()
+directBallControl()
+setupAutoRelease()
+hookInputForRealShots()
 
 Rayfield:Notify({
-    Title = "Mobile Basketball Hacks",
-    Content = "Optimized for touch screen",
+    Title = "No Pump Fake Loaded",
+    Content = "All shots will be real shots",
     Duration = 5,
 })
 
-print("Mobile Basketball Hacks initialized!")
+print("RH2 No Pump Fake system loaded!")
