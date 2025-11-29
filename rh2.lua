@@ -3,13 +3,13 @@ getgenv().SecureMode = true
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "School Fight Combat",
-   LoadingTitle = "Combat System",
-   LoadingSubtitle = "For Fight in a School",
+   Name = "Teleport Combat",
+   LoadingTitle = "Blink Fighter",
+   LoadingSubtitle = "Teleport + Game Mechanics",
    ConfigurationSaving = {
       Enabled = true,
       FolderName = nil,
-      FileName = "SchoolFightConfig"
+      FileName = "TeleportCombatConfig"
    },
    KeySystem = false,
 })
@@ -21,140 +21,187 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Combat Settings
-_G.KillAura = false
-_G.KillAuraRange = 25
-_G.AutoAttack = false
-_G.TargetNearest = true
-_G.ForceField = false
-_G.SpeedBoost = false
+_G.TeleportKill = false
+_G.BlinkCombat = false
+_G.ComboMode = false
+_G.TeleportDelay = 0.2
+_G.UseGameMoves = true
+_G.AutoExecute = false
 
--- Anti-Cheat Settings
-_G.HideCombat = true
-_G.RandomizeAttacks = true
-_G.LegitMode = false
-_G.AntiReport = true
+-- Anti-Cheat
+_G.HideTeleports = true
+_G.RandomizeTP = true
+_G.LegitTeleport = false
 
--- Advanced Anti-Cheat Bypass
-local function setupAdvancedACBypass()
-    print("🛡️ Initializing Advanced AC Bypass...")
-    
-    -- Memory obfuscation
-    if setfflag then
-        setfflag("DFIntCrashUploadMaxUploads", "0")
-    end
-    
-    -- Hook detection systems
+-- Teleport to target and use game mechanics
+local function teleportAndAttack(target)
     pcall(function()
-        for _, obj in pairs(game:GetDescendants()) do
-            if obj:IsA("RemoteEvent") and (obj.Name:lower():find("report") or obj.Name:lower():find("cheat") or obj.Name:lower():find("detect")) then
-                local oldFire = obj.FireServer
-                obj.FireServer = function(self, ...)
-                    warn("Blocked AC report: " .. obj.Name)
-                    return nil
+        local character = LocalPlayer.Character
+        local targetChar = target.Character
+        
+        if not character or not character:FindFirstChild("HumanoidRootPart") then
+            return
+        end
+        
+        if not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") then
+            return
+        end
+        
+        local targetRoot = targetChar.HumanoidRootPart
+        local myRoot = character.HumanoidRootPart
+        
+        -- Calculate teleport position (behind target)
+        local offset = CFrame.new(0, 0, 3) -- 3 studs behind
+        local teleportCFrame = targetRoot.CFrame * offset
+        
+        -- Add randomness if enabled
+        if _G.RandomizeTP then
+            local randomOffset = Vector3.new(
+                math.random(-2, 2),
+                0,
+                math.random(-2, 2)
+            )
+            teleportCFrame = teleportCFrame + randomOffset
+        end
+        
+        -- Teleport
+        myRoot.CFrame = teleportCFrame
+        
+        -- Wait a moment
+        wait(0.1)
+        
+        -- Face the target
+        myRoot.CFrame = CFrame.new(myRoot.Position, targetRoot.Position)
+        
+        -- USE GAME MECHANICS TO ATTACK:
+        
+        -- Method 1: Look for and use game weapons/tools
+        for _, tool in pairs(character:GetChildren()) do
+            if tool:IsA("Tool") then
+                -- Activate tool
+                tool:Activate()
+                
+                -- Fire tool remotes
+                for _, remote in pairs(tool:GetDescendants()) do
+                    if remote:IsA("RemoteEvent") then
+                        remote:FireServer(target)
+                        remote:FireServer(targetChar)
+                        remote:FireServer("hit")
+                    end
                 end
             end
         end
+        
+        -- Method 2: Use game attack remotes
+        for _, remote in pairs(game:GetDescendants()) do
+            if remote:IsA("RemoteEvent") then
+                local name = remote.Name:lower()
+                if name:find("punch") or name:find("hit") or name:find("attack") or name:find("damage") then
+                    remote:FireServer(target)
+                    remote:FireServer(targetChar)
+                    remote:FireServer("attack")
+                end
+            end
+        end
+        
+        -- Method 3: Touch damage (common in fighting games)
+        firetouchinterest(myRoot, targetRoot, 0)
+        wait()
+        firetouchinterest(myRoot, targetRoot, 1)
+        
+        -- Method 4: Direct humanoid damage as backup
+        local targetHumanoid = targetChar:FindFirstChild("Humanoid")
+        if targetHumanoid then
+            targetHumanoid:TakeDamage(25)
+        end
+        
+        -- Method 5: Look for combat scripts and trigger them
+        for _, script in pairs(character:GetDescendants()) do
+            if script:IsA("Script") or script:IsA("LocalScript") then
+                if script.Name:lower():find("combat") or script.Name:lower():find("attack") then
+                    pcall(function() script:FireServer("attack", target) end)
+                end
+            end
+        end
+        
+        print("✅ Teleported and attacked: " .. target.Name)
     end)
-    
-    -- Script hiding
-    pcall(function()
-        for _, v in pairs(getreg()) do
-            if type(v) == "function" and is_synapse_function(v) then
-                hookfunction(v, function(...) return ... end)
-            end
-        end
-    end)
-    
-    print("✅ Advanced AC Bypass Active")
 end
 
--- Find valid targets (enemies)
-local function getValidTargets()
-    local targets = {}
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
-            local humanoid = player.Character.Humanoid
-            if humanoid.Health > 0 then
-                table.insert(targets, player)
-            end
-        end
-    end
-    return targets
-end
-
--- Get nearest target
-local function getNearestTarget()
-    local targets = getValidTargets()
-    local nearest = nil
-    local nearestDist = math.huge
-    
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then
-        return nil
-    end
-    
-    local root = character.HumanoidRootPart
-    
-    for _, target in pairs(targets) do
-        if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local targetRoot = target.Character.HumanoidRootPart
-            local distance = (root.Position - targetRoot.Position).Magnitude
-            
-            if distance < nearestDist and distance <= _G.KillAuraRange then
-                nearestDist = distance
-                nearest = target
-            end
-        end
-    end
-    
-    return nearest
-end
-
--- Kill Aura System
-local function activateKillAura()
+-- Main teleport combat loop
+local function startTeleportCombat()
     spawn(function()
-        while _G.KillAura do
-            wait(_G.LegitMode and 0.3 or 0.1) -- Slower in legit mode
+        while _G.TeleportKill do
+            wait(_G.TeleportDelay)
             
             pcall(function()
+                local targets = {}
+                
+                -- Get all valid targets
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character then
+                        local humanoid = player.Character:FindFirstChild("Humanoid")
+                        if humanoid and humanoid.Health > 0 then
+                            table.insert(targets, player)
+                        end
+                    end
+                end
+                
+                if #targets > 0 then
+                    -- Teleport to each target and attack
+                    for _, target in pairs(targets) do
+                        if _G.BlinkCombat then
+                            -- Blink mode: Quick teleports
+                            teleportAndAttack(target)
+                            wait(0.1)
+                        else
+                            -- Normal mode: Sequential
+                            teleportAndAttack(target)
+                            wait(_G.TeleportDelay)
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+-- Combo Mode: Chain attacks on single target
+local function startComboMode()
+    spawn(function()
+        while _G.ComboMode do
+            wait(0.5)
+            
+            pcall(function()
+                -- Find nearest target for combo
+                local nearest = nil
+                local nearestDist = math.huge
                 local character = LocalPlayer.Character
+                
                 if not character or not character:FindFirstChild("HumanoidRootPart") then
                     return
                 end
                 
-                local targets = getValidTargets()
+                local myRoot = character.HumanoidRootPart
                 
-                for _, target in pairs(targets) do
-                    if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                        local targetRoot = target.Character.HumanoidRootPart
-                        local distance = (character.HumanoidRootPart.Position - targetRoot.Position).Magnitude
-                        
-                        if distance <= _G.KillAuraRange then
-                            -- Method 1: Remote event attacks
-                            for _, obj in pairs(game:GetDescendants()) do
-                                if obj:IsA("RemoteEvent") and (obj.Name:lower():find("hit") or obj.Name:lower():find("damage") or obj.Name:lower():find("attack")) then
-                                    if _G.RandomizeAttacks and math.random(1, 3) == 1 then
-                                        -- Add randomness to avoid pattern detection
-                                        obj:FireServer(target, math.random(25, 50))
-                                    else
-                                        obj:FireServer(target, 50) -- High damage
-                                    end
-                                end
-                            end
-                            
-                            -- Method 2: Direct damage
-                            local targetHumanoid = target.Character:FindFirstChild("Humanoid")
-                            if targetHumanoid then
-                                targetHumanoid:TakeDamage(35)
-                            end
-                            
-                            -- Method 3: Touch damage
-                            if not _G.LegitMode then
-                                firetouchinterest(character.HumanoidRootPart, targetRoot, 0)
-                                wait()
-                                firetouchinterest(character.HumanoidRootPart, targetRoot, 1)
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character then
+                        local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
+                        if targetRoot then
+                            local dist = (myRoot.Position - targetRoot.Position).Magnitude
+                            if dist < nearestDist then
+                                nearestDist = dist
+                                nearest = player
                             end
                         end
+                    end
+                end
+                
+                if nearest then
+                    -- Combo: Teleport + multiple attacks
+                    for i = 1, 3 do -- 3-hit combo
+                        teleportAndAttack(nearest)
+                        wait(0.2)
                     end
                 end
             end)
@@ -162,200 +209,153 @@ local function activateKillAura()
     end)
 end
 
--- Auto-Target System
-local function activateAutoTarget()
+-- Auto-execute moves (uses game's actual combat system)
+local function autoExecuteMoves()
     spawn(function()
-        while _G.AutoAttack do
-            wait(0.2)
+        while _G.AutoExecute do
+            wait(0.3)
             
             pcall(function()
-                local nearest = getNearestTarget()
-                if nearest then
-                    local character = LocalPlayer.Character
-                    if character and character:FindFirstChild("HumanoidRootPart") then
-                        -- Face the target
-                        local targetRoot = nearest.Character.HumanoidRootPart
-                        character.HumanoidRootPart.CFrame = CFrame.new(
-                            character.HumanoidRootPart.Position,
-                            Vector3.new(targetRoot.Position.X, character.HumanoidRootPart.Position.Y, targetRoot.Position.Z)
-                        )
+                local character = LocalPlayer.Character
+                if not character then return end
+                
+                -- Find and use special moves/abilities
+                for _, remote in pairs(game:GetDescendants()) do
+                    if remote:IsA("RemoteEvent") then
+                        local name = remote.Name:lower()
                         
-                        -- Auto-attack
-                        if _G.KillAura then
-                            for _, obj in pairs(game:GetDescendants()) do
-                                if obj:IsA("RemoteEvent") and obj.Name:lower():find("attack") then
-                                    obj:FireServer(nearest, 40)
-                                end
-                            end
+                        -- Look for special moves
+                        if name:find("special") or name:find("ultimate") or name:find("ability") or name:find("move") then
+                            remote:FireServer("activate")
+                            remote:FireServer("use")
+                        end
+                        
+                        -- Look for combo moves
+                        if name:find("combo") or name:find("finisher") or name:find("execute") then
+                            remote:FireServer()
                         end
                     end
+                end
+                
+                -- Use keyboard inputs for moves (common in fighting games)
+                local keys = {Enum.KeyCode.Q, Enum.KeyCode.E, Enum.KeyCode.R, Enum.KeyCode.F, Enum.KeyCode.G}
+                for _, key in pairs(keys) do
+                    UserInputService:SendKeyEvent(true, key, false, game)
+                    UserInputService:SendKeyEvent(false, key, false, game)
                 end
             end)
         end
     end)
 end
 
--- Force Field Protection
-local function activateForceField()
-    spawn(function()
-        while _G.ForceField do
-            wait(1)
-            pcall(function()
-                local character = LocalPlayer.Character
-                if character and character:FindFirstChild("Humanoid") then
-                    -- Prevent damage
-                    character.Humanoid.Health = 100
-                    
-                    -- Block incoming attacks
-                    for _, obj in pairs(game:GetDescendants()) do
-                        if obj:IsA("RemoteEvent") and obj.Name:lower():find("damage") then
-                            local oldFire = obj.FireServer
-                            obj.FireServer = function(self, ...)
-                                local args = {...}
-                                -- Block damage to self
-                                if args[1] == LocalPlayer then
-                                    return nil
-                                end
-                                return oldFire(self, ...)
-                            end
-                        end
-                    end
+-- Find game-specific combat mechanics
+local function scanCombatMechanics()
+    local mechanics = {}
+    
+    pcall(function()
+        -- Look for combat remotes
+        for _, remote in pairs(game:GetDescendants()) do
+            if remote:IsA("RemoteEvent") then
+                local name = remote.Name:lower()
+                if name:find("punch") or name:find("kick") or name:find("hit") or name:find("attack") or name:find("combo") then
+                    table.insert(mechanics, "Remote: " .. remote.Name)
                 end
-            end)
+            end
+        end
+        
+        -- Look for weapons/tools
+        for _, tool in pairs(workspace:GetDescendants()) do
+            if tool:IsA("Tool") then
+                table.insert(mechanics, "Weapon: " .. tool.Name)
+            end
+        end
+        
+        -- Look for combat scripts
+        for _, script in pairs(game:GetDescendants()) do
+            if script:IsA("Script") and script.Name:lower():find("combat") then
+                table.insert(mechanics, "Script: " .. script.Name)
+            end
         end
     end)
-end
-
--- Speed Boost
-local function activateSpeedBoost()
-    spawn(function()
-        while _G.SpeedBoost do
-            wait(0.5)
-            pcall(function()
-                local character = LocalPlayer.Character
-                if character and character:FindFirstChild("Humanoid") then
-                    character.Humanoid.WalkSpeed = 25 -- Increased speed
-                    character.Humanoid.JumpPower = 55
-                end
-            end)
-        end
-    end)
+    
+    return mechanics
 end
 
 -- Rayfield UI
-local MainTab = Window:CreateTab("Combat System", nil)
+local MainTab = Window:CreateTab("Teleport Combat", nil)
 
--- Anti-Cheat Section
-local ACSection = MainTab:CreateSection("Advanced AC Bypass")
+-- Teleport Settings
+local TeleportSection = MainTab:CreateSection("Teleport Combat")
 
-local ACToggle = MainTab:CreateToggle({
-    Name = "Enable AC Bypass",
-    CurrentValue = true,
-    Flag = "HideCombat",
-    Callback = function(Value)
-        _G.HideCombat = Value
-        if Value then setupAdvancedACBypass() end
-    end,
-})
-
-local RandomizeToggle = MainTab:CreateToggle({
-    Name = "Randomize Attacks",
-    CurrentValue = true,
-    Flag = "RandomizeAttacks",
-    Callback = function(Value)
-        _G.RandomizeAttacks = Value
-    end,
-})
-
-local LegitToggle = MainTab:CreateToggle({
-    Name = "Legit Mode",
+local TeleportToggle = MainTab:CreateToggle({
+    Name = "Teleport Kill Mode",
     CurrentValue = false,
-    Flag = "LegitMode",
+    Flag = "TeleportKill",
     Callback = function(Value)
-        _G.LegitMode = Value
-    end,
-})
-
--- Combat Section
-local CombatSection = MainTab:CreateSection("Combat Settings")
-
-local KillAuraToggle = MainTab:CreateToggle({
-    Name = "Kill Aura",
-    CurrentValue = false,
-    Flag = "KillAura",
-    Callback = function(Value)
-        _G.KillAura = Value
+        _G.TeleportKill = Value
         if Value then
-            activateKillAura()
+            startTeleportCombat()
             Rayfield:Notify({
-                Title = "Kill Aura Active",
-                Content = "Auto-attacking nearby enemies",
+                Title = "Teleport Combat Active",
+                Content = "Blinking to targets and attacking",
                 Duration = 3,
             })
         end
     end,
 })
 
-local AuraRange = MainTab:CreateSlider({
-    Name = "Kill Aura Range",
-    Range = {10, 50},
-    Increment = 5,
-    Suffix = "studs",
-    CurrentValue = 25,
-    Flag = "KillAuraRange",
+local BlinkToggle = MainTab:CreateToggle({
+    Name = "Blink Combat (Fast)",
+    CurrentValue = false,
+    Flag = "BlinkCombat",
     Callback = function(Value)
-        _G.KillAuraRange = Value
+        _G.BlinkCombat = Value
     end,
 })
 
-local AutoAttackToggle = MainTab:CreateToggle({
-    Name = "Auto-Target",
+local ComboToggle = MainTab:CreateToggle({
+    Name = "Combo Mode",
     CurrentValue = false,
-    Flag = "AutoAttack",
+    Flag = "ComboMode",
     Callback = function(Value)
-        _G.AutoAttack = Value
+        _G.ComboMode = Value
         if Value then
-            activateAutoTarget()
+            startComboMode()
             Rayfield:Notify({
-                Title = "Auto-Target Active",
-                Content = "Automatically targeting enemies",
+                Title = "Combo Mode Active",
+                Content = "3-hit combos on nearest target",
                 Duration = 3,
             })
         end
     end,
 })
 
--- Defense Section
-local DefenseSection = MainTab:CreateSection("Defense")
-
-local ForceFieldToggle = MainTab:CreateToggle({
-    Name = "Force Field",
-    CurrentValue = false,
-    Flag = "ForceField",
+local DelaySlider = MainTab:CreateSlider({
+    Name = "Teleport Delay",
+    Range = {0.1, 1.0},
+    Increment = 0.1,
+    Suffix = "seconds",
+    CurrentValue = 0.2,
+    Flag = "TeleportDelay",
     Callback = function(Value)
-        _G.ForceField = Value
-        if Value then
-            activateForceField()
-            Rayfield:Notify({
-                Title = "Force Field Active",
-                Content = "Damage protection enabled",
-                Duration = 3,
-            })
-        end
+        _G.TeleportDelay = Value
     end,
 })
 
-local SpeedToggle = MainTab:CreateToggle({
-    Name = "Speed Boost",
+-- Game Mechanics
+local MechanicsSection = MainTab:CreateSection("Game Mechanics")
+
+local AutoExecuteToggle = MainTab:CreateToggle({
+    Name = "Auto-Execute Moves",
     CurrentValue = false,
-    Flag = "SpeedBoost",
+    Flag = "AutoExecute",
     Callback = function(Value)
-        _G.SpeedBoost = Value
+        _G.AutoExecute = Value
         if Value then
-            activateSpeedBoost()
+            autoExecuteMoves()
             Rayfield:Notify({
-                Title = "Speed Boost Active",
-                Content = "Movement speed increased",
+                Title = "Auto-Execute Active",
+                Content = "Using game special moves automatically",
                 Duration = 3,
             })
         end
@@ -365,36 +365,68 @@ local SpeedToggle = MainTab:CreateToggle({
 -- Quick Actions
 local ActionsSection = MainTab:CreateSection("Quick Actions")
 
-local GodMode = MainTab:CreateButton({
-    Name = "Activate God Mode",
+local NinjaMode = MainTab:CreateButton({
+    Name = "Activate Ninja Mode",
     Callback = function()
-        _G.KillAura = true
-        _G.AutoAttack = true
-        _G.ForceField = true
-        _G.SpeedBoost = true
-        KillAuraToggle:Set(true)
-        AutoAttackToggle:Set(true)
-        ForceFieldToggle:Set(true)
-        SpeedToggle:Set(true)
-        activateKillAura()
-        activateAutoTarget()
-        activateForceField()
-        activateSpeedBoost()
+        _G.TeleportKill = true
+        _G.BlinkCombat = true
+        _G.AutoExecute = true
+        TeleportToggle:Set(true)
+        BlinkToggle:Set(true)
+        AutoExecuteToggle:Set(true)
+        startTeleportCombat()
+        autoExecuteMoves()
         Rayfield:Notify({
-            Title = "God Mode Active",
-            Content = "All combat features enabled",
+            Title = "Ninja Mode Active",
+            Content = "Instant teleports + special moves",
             Duration = 4,
         })
     end,
 })
 
--- Initialize
-setupAdvancedACBypass()
+local ScanMoves = MainTab:CreateButton({
+    Name = "Scan Combat Mechanics",
+    Callback = function()
+        local mechanics = scanCombatMechanics()
+        local message = "Found " .. #mechanics .. " combat mechanics:\n"
+        for i, mech in ipairs(mechanics) do
+            if i <= 6 then
+                message = message .. "• " .. mech .. "\n"
+            end
+        end
+        Rayfield:Notify({
+            Title = "Combat Mechanics",
+            Content = message,
+            Duration = 6,
+        })
+    end,
+})
+
+-- Status
+local StatusSection = MainTab:CreateSection("Status")
+local CombatStatus = MainTab:CreateLabel("Ready to fight")
+
+-- Update status
+spawn(function()
+    while true do
+        wait(2)
+        local targetCount = 0
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                if humanoid and humanoid.Health > 0 then
+                    targetCount = targetCount + 1
+                end
+            end
+        end
+        CombatStatus:Set("Alive Targets: " .. targetCount)
+    end
+end)
 
 Rayfield:Notify({
-    Title = "School Fight Combat Loaded",
-    Content = "With advanced anti-cheat bypass",
+    Title = "Teleport Combat Loaded",
+    Content = "Blink behind enemies and use game mechanics",
     Duration = 5,
 })
 
-print("🎮 School Fight Combat system initialized!")
+print("⚡ Teleport Combat system initialized!")
