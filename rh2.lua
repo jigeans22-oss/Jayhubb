@@ -3,13 +3,13 @@ getgenv().SecureMode = true
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "The Bronx Currency Pro",
-   LoadingTitle = "Currency + AC Bypass",
-   LoadingSubtitle = "Full Protection System",
+   Name = "School Fight Combat",
+   LoadingTitle = "Combat System",
+   LoadingSubtitle = "For Fight in a School",
    ConfigurationSaving = {
       Enabled = true,
       FolderName = nil,
-      FileName = "BronxProConfig"
+      FileName = "SchoolFightConfig"
    },
    KeySystem = false,
 })
@@ -17,291 +17,225 @@ local Window = Rayfield:CreateWindow({
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- Currency Settings
-_G.MoneyHack = false
-_G.CashAmount = 10000
-_G.ForceMoney = false
-_G.AutoFarm = false
+-- Combat Settings
+_G.KillAura = false
+_G.KillAuraRange = 25
+_G.AutoAttack = false
+_G.TargetNearest = true
+_G.ForceField = false
+_G.SpeedBoost = false
 
--- Anti-Cheat Bypass Settings
-_G.HideScripts = true
-_G.SpoofMemory = true
-_G.AntiKick = true
-_G.ClearLogs = true
-_G.SimulateLegit = true
-_G.RandomizePatterns = true
+-- Anti-Cheat Settings
+_G.HideCombat = true
+_G.RandomizeAttacks = true
+_G.LegitMode = false
+_G.AntiReport = true
 
--- Anti-Cheat Bypass System
-local function setupACBypass()
-    print("🛡️ Initializing Anti-Cheat Bypass...")
+-- Advanced Anti-Cheat Bypass
+local function setupAdvancedACBypass()
+    print("🛡️ Initializing Advanced AC Bypass...")
     
-    -- Hide script execution
-    if _G.HideScripts then
-        pcall(function()
-            -- Obfuscate function calls
-            for _, v in pairs(getreg()) do
-                if type(v) == "function" and is_synapse_function(v) then
-                    hookfunction(v, function(...) return ... end)
+    -- Memory obfuscation
+    if setfflag then
+        setfflag("DFIntCrashUploadMaxUploads", "0")
+    end
+    
+    -- Hook detection systems
+    pcall(function()
+        for _, obj in pairs(game:GetDescendants()) do
+            if obj:IsA("RemoteEvent") and (obj.Name:lower():find("report") or obj.Name:lower():find("cheat") or obj.Name:lower():find("detect")) then
+                local oldFire = obj.FireServer
+                obj.FireServer = function(self, ...)
+                    warn("Blocked AC report: " .. obj.Name)
+                    return nil
                 end
-            end
-            
-            -- Randomize script signatures
-            if setfflag then
-                setfflag("DFIntCrashUploadMaxUploads", "0")
-            end
-        end)
-    end
-
-    -- Spoof memory usage
-    if _G.SpoofMemory then
-        pcall(function()
-            local oldgcinfo = gcinfo
-            gcinfo = function() return math.random(35, 75) end
-        end)
-    end
-
-    -- Anti-kick protection
-    if _G.AntiKick then
-        pcall(function()
-            LocalPlayer.Kick:Connect(function()
-                warn("Kick attempt blocked")
-                return nil
-            end)
-        end)
-    end
-
-    -- Clear execution logs
-    if _G.ClearLogs then
-        pcall(function()
-            rconsoleclear()
-            game:GetService("LogService").MessageOut:Connect(function() end)
-        end)
-    end
-
-    -- Simulate legitimate behavior
-    if _G.SimulateLegit then
-        spawn(function()
-            while _G.SimulateLegit do
-                wait(math.random(10, 30))
-                pcall(function()
-                    -- Simulate normal player actions
-                    local character = LocalPlayer.Character
-                    if character and character:FindFirstChild("Humanoid") then
-                        local humanoid = character.Humanoid
-                        -- Random movements
-                        if math.random(1, 5) == 1 then
-                            humanoid:Move(Vector3.new(
-                                math.random(-5, 5),
-                                0,
-                                math.random(-5, 5)
-                            ))
-                        end
-                    end
-                end)
-            end
-        end)
-    end
-    print("✅ Anti-Cheat Bypass Active")
-end
-
--- Advanced Remote Event Hooking with AC Evasion
-local function hookRemotesSafely()
-    local hookedRemotes = {}
-    
-    return function(remote, callback)
-        if hookedRemotes[remote] then return end
-        hookedRemotes[remote] = true
-        
-        pcall(function()
-            local oldFireServer = remote.FireServer
-            remote.FireServer = function(self, ...)
-                local args = {...}
-                
-                -- Randomize timing to avoid pattern detection
-                if _G.RandomizePatterns then
-                    wait(math.random(1, 10) / 100)
-                end
-                
-                -- Call the modification callback
-                local modifiedArgs = callback(args) or args
-                
-                return oldFireServer(self, unpack(modifiedArgs))
-            end
-        end)
-    end
-end
-
--- Find and Hook Bronx Remotes Safely
-local function findAndHookBronxRemotes()
-    local safeHook = hookRemotesSafely()
-    local foundCount = 0
-    
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            local nameLower = obj.Name:lower()
-            
-            -- Money-related remotes
-            if nameLower:find("cash") or nameLower:find("money") or 
-               nameLower:find("currency") or nameLower:find("reward") or
-               nameLower:find("purchase") or nameLower:find("collect") then
-                
-                safeHook(obj, function(args)
-                    if _G.MoneyHack then
-                        for i, arg in pairs(args) do
-                            if type(arg) == "number" and arg > 0 and arg < 100000 then
-                                -- Multiply with randomization
-                                local multiplier = math.random(5, 15)
-                                args[i] = arg * multiplier
-                            elseif type(arg) == "string" and arg:find("%d+") then
-                                -- Replace numbers in strings
-                                args[i] = arg:gsub("%d+", tostring(_G.CashAmount))
-                            end
-                        end
-                        
-                        -- Add random arguments to avoid pattern detection
-                        if _G.RandomizePatterns and math.random(1, 3) == 1 then
-                            table.insert(args, "legit_player_action")
-                            table.insert(args, math.random(1000, 9999))
-                        end
-                    end
-                    return args
-                end)
-                foundCount = foundCount + 1
-            end
-            
-            -- Anti-cheat reporting remotes (block them)
-            if nameLower:find("report") or nameLower:find("cheat") or 
-               nameLower:find("detect") or nameLower:find("violation") then
-                
-                safeHook(obj, function(args)
-                    -- Block anti-cheat reports
-                    warn("Blocked anti-cheat report to: " .. obj.Name)
-                    return {} -- Return empty to block
-                end)
             end
         end
-        
-        -- Also hook RemoteFunctions
-        if obj:IsA("RemoteFunction") then
-            local nameLower = obj.Name:lower()
-            if nameLower:find("cash") or nameLower:find("money") then
-                local oldInvoke = obj.InvokeServer
-                obj.InvokeServer = function(self, ...)
-                    local args = {...}
-                    if _G.MoneyHack then
-                        for i, arg in pairs(args) do
-                            if type(arg) == "number" and arg > 0 then
-                                args[i] = arg * 10
-                            end
-                        end
-                    end
-                    return oldInvoke(self, unpack(args))
-                end
-                foundCount = foundCount + 1
+    end)
+    
+    -- Script hiding
+    pcall(function()
+        for _, v in pairs(getreg()) do
+            if type(v) == "function" and is_synapse_function(v) then
+                hookfunction(v, function(...) return ... end)
+            end
+        end
+    end)
+    
+    print("✅ Advanced AC Bypass Active")
+end
+
+-- Find valid targets (enemies)
+local function getValidTargets()
+    local targets = {}
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+            local humanoid = player.Character.Humanoid
+            if humanoid.Health > 0 then
+                table.insert(targets, player)
+            end
+        end
+    end
+    return targets
+end
+
+-- Get nearest target
+local function getNearestTarget()
+    local targets = getValidTargets()
+    local nearest = nil
+    local nearestDist = math.huge
+    
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+    
+    local root = character.HumanoidRootPart
+    
+    for _, target in pairs(targets) do
+        if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local targetRoot = target.Character.HumanoidRootPart
+            local distance = (root.Position - targetRoot.Position).Magnitude
+            
+            if distance < nearestDist and distance <= _G.KillAuraRange then
+                nearestDist = distance
+                nearest = target
             end
         end
     end
     
-    return foundCount
+    return nearest
 end
 
--- Money Modification System with AC Protection
-local function setupMoneySystem()
+-- Kill Aura System
+local function activateKillAura()
     spawn(function()
-        while _G.MoneyHack do
-            wait(math.random(2, 5)) -- Random intervals
+        while _G.KillAura do
+            wait(_G.LegitMode and 0.3 or 0.1) -- Slower in legit mode
+            
             pcall(function()
-                local hookedCount = findAndHookBronxRemotes()
+                local character = LocalPlayer.Character
+                if not character or not character:FindFirstChild("HumanoidRootPart") then
+                    return
+                end
                 
-                -- Client-side money display modification
-                if _G.ForceMoney then
-                    pcall(function()
-                        -- Modify various stat locations
-                        local statLocations = {
-                            LocalPlayer:FindFirstChild("leaderstats"),
-                            LocalPlayer:FindFirstChild("Stats"),
-                            LocalPlayer:FindFirstChild("Data"),
-                            workspace:FindFirstChild("GameData")
-                        }
+                local targets = getValidTargets()
+                
+                for _, target in pairs(targets) do
+                    if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                        local targetRoot = target.Character.HumanoidRootPart
+                        local distance = (character.HumanoidRootPart.Position - targetRoot.Position).Magnitude
                         
-                        for _, stats in pairs(statLocations) do
-                            if stats then
-                                for _, stat in pairs(stats:GetChildren()) do
-                                    local statName = stat.Name:lower()
-                                    if statName:find("cash") or statName:find("money") or statName:find("currency") then
-                                        if stat:IsA("IntValue") or stat:IsA("NumberValue") then
-                                            -- Set with random variation
-                                            local variation = math.random(-100, 100)
-                                            stat.Value = _G.CashAmount + variation
-                                        end
+                        if distance <= _G.KillAuraRange then
+                            -- Method 1: Remote event attacks
+                            for _, obj in pairs(game:GetDescendants()) do
+                                if obj:IsA("RemoteEvent") and (obj.Name:lower():find("hit") or obj.Name:lower():find("damage") or obj.Name:lower():find("attack")) then
+                                    if _G.RandomizeAttacks and math.random(1, 3) == 1 then
+                                        -- Add randomness to avoid pattern detection
+                                        obj:FireServer(target, math.random(25, 50))
+                                    else
+                                        obj:FireServer(target, 50) -- High damage
                                     end
                                 end
                             end
-                        end
-                    end)
-                end
-                
-                -- Trigger fake "legitimate" money events
-                if _G.RandomizePatterns then
-                    pcall(function()
-                        for _, remote in pairs(game:GetDescendants()) do
-                            if remote:IsA("RemoteEvent") and remote.Name:lower():find("reward") then
-                                if math.random(1, 10) == 1 then
-                                    remote:FireServer("daily_bonus", math.random(50, 200))
-                                end
+                            
+                            -- Method 2: Direct damage
+                            local targetHumanoid = target.Character:FindFirstChild("Humanoid")
+                            if targetHumanoid then
+                                targetHumanoid:TakeDamage(35)
+                            end
+                            
+                            -- Method 3: Touch damage
+                            if not _G.LegitMode then
+                                firetouchinterest(character.HumanoidRootPart, targetRoot, 0)
+                                wait()
+                                firetouchinterest(character.HumanoidRootPart, targetRoot, 1)
                             end
                         end
-                    end)
+                    end
                 end
             end)
         end
     end)
 end
 
--- Auto-Farm System with Legitimacy Simulation
-local function setupAutoFarm()
+-- Auto-Target System
+local function activateAutoTarget()
     spawn(function()
-        while _G.AutoFarm do
-            wait(math.random(3, 8)) -- Random farming intervals
+        while _G.AutoAttack do
+            wait(0.2)
+            
             pcall(function()
-                -- Look for collectibles with random patterns
-                local collectibles = {}
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj.Name:lower():find("cash") or obj.Name:lower():find("money") or 
-                       obj.Name:lower():find("coin") or obj.Name:lower():find("reward") then
-                        if obj:IsA("Part") then
-                            table.insert(collectibles, obj)
-                        end
-                    end
-                end
-                
-                -- Collect in random order
-                if #collectibles > 0 then
+                local nearest = getNearestTarget()
+                if nearest then
                     local character = LocalPlayer.Character
                     if character and character:FindFirstChild("HumanoidRootPart") then
-                        local randomCollectible = collectibles[math.random(1, #collectibles)]
-                        firetouchinterest(character.HumanoidRootPart, randomCollectible, 0)
-                        wait(0.1)
-                        firetouchinterest(character.HumanoidRootPart, randomCollectible, 1)
-                    end
-                end
-                
-                -- Random mission triggers
-                if math.random(1, 5) == 1 then
-                    for _, obj in pairs(workspace:GetDescendants()) do
-                        if obj:IsA("Part") and obj.Name:lower():find("mission") then
-                            local character = LocalPlayer.Character
-                            if character and character:FindFirstChild("HumanoidRootPart") then
-                                firetouchinterest(character.HumanoidRootPart, obj, 0)
-                                wait(0.1)
-                                firetouchinterest(character.HumanoidRootPart, obj, 1)
-                                break
+                        -- Face the target
+                        local targetRoot = nearest.Character.HumanoidRootPart
+                        character.HumanoidRootPart.CFrame = CFrame.new(
+                            character.HumanoidRootPart.Position,
+                            Vector3.new(targetRoot.Position.X, character.HumanoidRootPart.Position.Y, targetRoot.Position.Z)
+                        )
+                        
+                        -- Auto-attack
+                        if _G.KillAura then
+                            for _, obj in pairs(game:GetDescendants()) do
+                                if obj:IsA("RemoteEvent") and obj.Name:lower():find("attack") then
+                                    obj:FireServer(nearest, 40)
+                                end
                             end
                         end
                     end
+                end
+            end)
+        end
+    end)
+end
+
+-- Force Field Protection
+local function activateForceField()
+    spawn(function()
+        while _G.ForceField do
+            wait(1)
+            pcall(function()
+                local character = LocalPlayer.Character
+                if character and character:FindFirstChild("Humanoid") then
+                    -- Prevent damage
+                    character.Humanoid.Health = 100
+                    
+                    -- Block incoming attacks
+                    for _, obj in pairs(game:GetDescendants()) do
+                        if obj:IsA("RemoteEvent") and obj.Name:lower():find("damage") then
+                            local oldFire = obj.FireServer
+                            obj.FireServer = function(self, ...)
+                                local args = {...}
+                                -- Block damage to self
+                                if args[1] == LocalPlayer then
+                                    return nil
+                                end
+                                return oldFire(self, ...)
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+-- Speed Boost
+local function activateSpeedBoost()
+    spawn(function()
+        while _G.SpeedBoost do
+            wait(0.5)
+            pcall(function()
+                local character = LocalPlayer.Character
+                if character and character:FindFirstChild("Humanoid") then
+                    character.Humanoid.WalkSpeed = 25 -- Increased speed
+                    character.Humanoid.JumpPower = 55
                 end
             end)
         end
@@ -309,70 +243,119 @@ local function setupAutoFarm()
 end
 
 -- Rayfield UI
-local MainTab = Window:CreateTab("Currency Pro", nil)
+local MainTab = Window:CreateTab("Combat System", nil)
 
 -- Anti-Cheat Section
-local ACSection = MainTab:CreateSection("Anti-Cheat Protection")
+local ACSection = MainTab:CreateSection("Advanced AC Bypass")
 
 local ACToggle = MainTab:CreateToggle({
     Name = "Enable AC Bypass",
     CurrentValue = true,
-    Flag = "HideScripts",
+    Flag = "HideCombat",
     Callback = function(Value)
-        _G.HideScripts = Value
-        if Value then setupACBypass() end
-    end,
-})
-
-local SpoofToggle = MainTab:CreateToggle({
-    Name = "Spoof Memory",
-    CurrentValue = true,
-    Flag = "SpoofMemory",
-    Callback = function(Value)
-        _G.SpoofMemory = Value
+        _G.HideCombat = Value
+        if Value then setupAdvancedACBypass() end
     end,
 })
 
 local RandomizeToggle = MainTab:CreateToggle({
-    Name = "Randomize Patterns",
+    Name = "Randomize Attacks",
     CurrentValue = true,
-    Flag = "RandomizePatterns",
+    Flag = "RandomizeAttacks",
     Callback = function(Value)
-        _G.RandomizePatterns = Value
+        _G.RandomizeAttacks = Value
     end,
 })
 
--- Money Section
-local MoneySection = MainTab:CreateSection("Money Settings")
-
-local MoneyToggle = MainTab:CreateToggle({
-    Name = "Money Modifier",
+local LegitToggle = MainTab:CreateToggle({
+    Name = "Legit Mode",
     CurrentValue = false,
-    Flag = "MoneyHack",
+    Flag = "LegitMode",
     Callback = function(Value)
-        _G.MoneyHack = Value
+        _G.LegitMode = Value
+    end,
+})
+
+-- Combat Section
+local CombatSection = MainTab:CreateSection("Combat Settings")
+
+local KillAuraToggle = MainTab:CreateToggle({
+    Name = "Kill Aura",
+    CurrentValue = false,
+    Flag = "KillAura",
+    Callback = function(Value)
+        _G.KillAura = Value
         if Value then
-            setupMoneySystem()
+            activateKillAura()
             Rayfield:Notify({
-                Title = "Money Modifier Active",
-                Content = "With AC protection",
+                Title = "Kill Aura Active",
+                Content = "Auto-attacking nearby enemies",
                 Duration = 3,
             })
         end
     end,
 })
 
-local AutoFarmToggle = MainTab:CreateToggle({
-    Name = "Smart Auto-Farm",
-    CurrentValue = false,
-    Flag = "AutoFarm",
+local AuraRange = MainTab:CreateSlider({
+    Name = "Kill Aura Range",
+    Range = {10, 50},
+    Increment = 5,
+    Suffix = "studs",
+    CurrentValue = 25,
+    Flag = "KillAuraRange",
     Callback = function(Value)
-        _G.AutoFarm = Value
+        _G.KillAuraRange = Value
+    end,
+})
+
+local AutoAttackToggle = MainTab:CreateToggle({
+    Name = "Auto-Target",
+    CurrentValue = false,
+    Flag = "AutoAttack",
+    Callback = function(Value)
+        _G.AutoAttack = Value
         if Value then
-            setupAutoFarm()
+            activateAutoTarget()
             Rayfield:Notify({
-                Title = "Smart Auto-Farm",
-                Content = "With legitimacy simulation",
+                Title = "Auto-Target Active",
+                Content = "Automatically targeting enemies",
+                Duration = 3,
+            })
+        end
+    end,
+})
+
+-- Defense Section
+local DefenseSection = MainTab:CreateSection("Defense")
+
+local ForceFieldToggle = MainTab:CreateToggle({
+    Name = "Force Field",
+    CurrentValue = false,
+    Flag = "ForceField",
+    Callback = function(Value)
+        _G.ForceField = Value
+        if Value then
+            activateForceField()
+            Rayfield:Notify({
+                Title = "Force Field Active",
+                Content = "Damage protection enabled",
+                Duration = 3,
+            })
+        end
+    end,
+})
+
+local SpeedToggle = MainTab:CreateToggle({
+    Name = "Speed Boost",
+    CurrentValue = false,
+    Flag = "SpeedBoost",
+    Callback = function(Value)
+        _G.SpeedBoost = Value
+        if Value then
+            activateSpeedBoost()
+            Rayfield:Notify({
+                Title = "Speed Boost Active",
+                Content = "Movement speed increased",
                 Duration = 3,
             })
         end
@@ -382,37 +365,36 @@ local AutoFarmToggle = MainTab:CreateToggle({
 -- Quick Actions
 local ActionsSection = MainTab:CreateSection("Quick Actions")
 
-local ActivateAll = MainTab:CreateButton({
-    Name = "Activate Full System",
+local GodMode = MainTab:CreateButton({
+    Name = "Activate God Mode",
     Callback = function()
-        _G.HideScripts = true
-        _G.SpoofMemory = true
-        _G.RandomizePatterns = true
-        _G.MoneyHack = true
-        _G.AutoFarm = true
-        ACToggle:Set(true)
-        SpoofToggle:Set(true)
-        RandomizeToggle:Set(true)
-        MoneyToggle:Set(true)
-        AutoFarmToggle:Set(true)
-        setupACBypass()
-        setupMoneySystem()
-        setupAutoFarm()
+        _G.KillAura = true
+        _G.AutoAttack = true
+        _G.ForceField = true
+        _G.SpeedBoost = true
+        KillAuraToggle:Set(true)
+        AutoAttackToggle:Set(true)
+        ForceFieldToggle:Set(true)
+        SpeedToggle:Set(true)
+        activateKillAura()
+        activateAutoTarget()
+        activateForceField()
+        activateSpeedBoost()
         Rayfield:Notify({
-            Title = "Full System Active",
-            Content = "All protections and features enabled",
+            Title = "God Mode Active",
+            Content = "All combat features enabled",
             Duration = 4,
         })
     end,
 })
 
 -- Initialize
-setupACBypass()
+setupAdvancedACBypass()
 
 Rayfield:Notify({
-    Title = "Bronx Currency Pro Loaded",
+    Title = "School Fight Combat Loaded",
     Content = "With advanced anti-cheat bypass",
-    Duration = 6,
+    Duration = 5,
 })
 
-print("🎮 The Bronx Currency Pro with AC Bypass initialized!")
+print("🎮 School Fight Combat system initialized!")
