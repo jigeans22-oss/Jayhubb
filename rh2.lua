@@ -3,13 +3,13 @@ getgenv().SecureMode = true
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Badge Range Visualizer",
-   LoadingTitle = "Range Visualizer",
+   Name = "RH2 Basketball Visualizer",
+   LoadingTitle = "RH2 Visualizer",
    LoadingSubtitle = "by Sirius",
    ConfigurationSaving = {
       Enabled = true,
       FolderName = nil,
-      FileName = "BadgeRangeConfig"
+      FileName = "RH2Config"
    },
    Discord = {
       Enabled = false,
@@ -27,102 +27,148 @@ local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 
--- Configuration
-_G.ShowBadgeRange = false
-_G.RangeDistance = 50
+-- RH2 Specific Configuration
+_G.ShowShotRange = false
+_G.ShowDunkRange = false
+_G.ShowPassRange = false
+_G.RangeDistance = 30
 _G.VisualizerColor = Color3.fromRGB(0, 255, 0)
 _G.MobileUIEnabled = false
 
 -- Visualizer Parts
 local rangeVisualizers = {}
-local rangeBeams = {}
 
 -- Mobile UI Elements
 local mobileScreenGui = nil
 local mobileFrame = nil
 
--- Create Range Visualizer
-local function createRangeVisualizer(position, radius)
+-- RH2 Specific Location Finder
+local function findRH2Locations()
+    local locations = {}
+    
+    -- Find basketball hoops
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj.Name:lower():find("hoop") or obj.Name:lower():find("basket") or obj.Name:lower():find("rim") then
+            if obj:IsA("Part") or obj:IsA("MeshPart") then
+                table.insert(locations, {
+                    Part = obj,
+                    Position = obj.Position,
+                    Name = "Hoop: " .. obj.Name,
+                    Type = "Hoop"
+                })
+            end
+        end
+    end
+    
+    -- Find court boundaries
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj.Name:lower():find("court") or obj.Name:lower():find("floor") or obj.Name:lower():find("bound") then
+            if obj:IsA("Part") then
+                table.insert(locations, {
+                    Part = obj,
+                    Position = obj.Position,
+                    Name = "Court: " .. obj.Name,
+                    Type = "Court"
+                })
+            end
+        end
+    end
+    
+    -- Find three-point line areas
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj.Name:lower():find("three") or obj.Name:lower():find("3pt") or obj.Name:lower():find("long") then
+            if obj:IsA("Part") then
+                table.insert(locations, {
+                    Part = obj,
+                    Position = obj.Position,
+                    Name = "3-Point: " .. obj.Name,
+                    Type = "ThreePoint"
+                })
+            end
+        end
+    end
+    
+    -- Find dunk zones
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj.Name:lower():find("dunk") or obj.Name:lower():find("slam") then
+            if obj:IsA("Part") then
+                table.insert(locations, {
+                    Part = obj,
+                    Position = obj.Position,
+                    Name = "Dunk Zone: " .. obj.Name,
+                    Type = "Dunk"
+                })
+            end
+        end
+    end
+    
+    -- Find pass targets or teammates
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local root = player.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                table.insert(locations, {
+                    Part = root,
+                    Position = root.Position,
+                    Name = "Teammate: " .. player.Name,
+                    Type = "Teammate"
+                })
+            end
+        end
+    end
+    
+    return locations
+end
+
+-- Create Range Visualizer for RH2
+local function createRH2Visualizer(position, radius, locationType)
+    local color = _G.VisualizerColor
+    
+    -- Different colors for different types
+    if locationType == "Hoop" then
+        color = Color3.fromRGB(255, 0, 0) -- Red for hoops
+    elseif locationType == "ThreePoint" then
+        color = Color3.fromRGB(255, 165, 0) -- Orange for 3-point
+    elseif locationType == "Dunk" then
+        color = Color3.fromRGB(0, 0, 255) -- Blue for dunk
+    elseif locationType == "Teammate" then
+        color = Color3.fromRGB(0, 255, 0) -- Green for teammates
+    end
+    
     local visualizer = Instance.new("Part")
-    visualizer.Name = "BadgeRangeVisualizer"
+    visualizer.Name = "RH2RangeVisualizer"
     visualizer.Shape = Enum.PartType.Ball
     visualizer.Material = Enum.Material.Neon
-    visualizer.Color = _G.VisualizerColor
-    visualizer.Transparency = 0.7
+    visualizer.Color = color
+    visualizer.Transparency = 0.8
     visualizer.Anchored = true
     visualizer.CanCollide = false
     visualizer.Size = Vector3.new(radius * 2, radius * 2, radius * 2)
     visualizer.Position = position
     visualizer.Parent = workspace
     
-    -- Create a beam effect
-    local beam = Instance.new("Beam")
-    beam.Attachment0 = Instance.new("Attachment")
-    beam.Attachment0.Parent = visualizer
-    beam.Attachment1 = Instance.new("Attachment")
-    beam.Attachment1.Parent = visualizer
-    beam.Attachment1.Position = Vector3.new(0, radius, 0)
-    beam.Color = ColorSequence.new(_G.VisualizerColor)
-    beam.Width0 = 2
-    beam.Width1 = 2
-    beam.Parent = visualizer
+    -- Billboard GUI for info
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 200, 0, 60)
+    billboard.StudsOffset = Vector3.new(0, radius + 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = visualizer
     
-    -- Surface GUI for distance display
-    local surfaceGui = Instance.new("SurfaceGui")
-    surfaceGui.Parent = visualizer
-    surfaceGui.Face = Enum.NormalId.Top
-    surfaceGui.AlwaysOnTop = true
-    
-    local distanceLabel = Instance.new("TextLabel")
-    distanceLabel.Size = UDim2.new(1, 0, 1, 0)
-    distanceLabel.BackgroundTransparency = 1
-    distanceLabel.Text = radius .. " studs"
-    distanceLabel.TextColor3 = _G.VisualizerColor
-    distanceLabel.TextScaled = true
-    distanceLabel.Parent = surfaceGui
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 0.7
+    label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    label.Text = locationType .. "\nRange: " .. radius .. " studs"
+    label.TextColor3 = color
+    label.TextScaled = true
+    label.Parent = billboard
     
     table.insert(rangeVisualizers, visualizer)
-    table.insert(rangeBeams, beam)
-    
     return visualizer
 end
 
--- Find Badge Locations
-local function findBadgeLocations()
-    local badgeLocations = {}
-    
-    -- Search for common badge-related objects
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj.Name:lower():find("badge") or obj.Name:lower():find("range") or obj.Name:lower():find("trigger") then
-            if obj:IsA("Part") or obj:IsA("MeshPart") then
-                table.insert(badgeLocations, {
-                    Part = obj,
-                    Position = obj.Position,
-                    Name = obj.Name
-                })
-            end
-        end
-    end
-    
-    -- Also check for proximity prompts which are often used for badges
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then
-            local parent = obj.Parent
-            if parent and (parent:IsA("Part") or parent:IsA("MeshPart")) then
-                table.insert(badgeLocations, {
-                    Part = parent,
-                    Position = parent.Position,
-                    Name = "Proximity: " .. (obj.ActionText or "Unknown")
-                })
-            end
-        end
-    end
-    
-    return badgeLocations
-end
-
--- Update Range Visualizers
-local function updateRangeVisualizers()
+-- Update RH2 Visualizers
+local function updateRH2Visualizers()
     -- Clear existing visualizers
     for _, visualizer in pairs(rangeVisualizers) do
         if visualizer and visualizer.Parent then
@@ -130,86 +176,49 @@ local function updateRangeVisualizers()
         end
     end
     rangeVisualizers = {}
-    rangeBeams = {}
     
-    if not _G.ShowBadgeRange then return end
-    
-    local badgeLocations = findBadgeLocations()
-    
-    for _, badge in pairs(badgeLocations) do
-        local visualizer = createRangeVisualizer(badge.Position, _G.RangeDistance)
-        
-        -- Add billboard GUI with badge info
-        local billboard = Instance.new("BillboardGui")
-        billboard.Size = UDim2.new(0, 200, 0, 50)
-        billboard.StudsOffset = Vector3.new(0, _G.RangeDistance + 2, 0)
-        billboard.AlwaysOnTop = true
-        billboard.Parent = visualizer
-        
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 0.5
-        label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        label.Text = badge.Name .. "\nRange: " .. _G.RangeDistance .. " studs"
-        label.TextColor3 = _G.VisualizerColor
-        label.TextScaled = true
-        label.Parent = billboard
-        
-        print("Found badge location: " .. badge.Name .. " at " .. tostring(badge.Position))
+    if not _G.ShowShotRange and not _G.ShowDunkRange and not _G.ShowPassRange then
+        return
     end
     
-    if #badgeLocations == 0 then
-        print("No badge locations found. Creating sample visualizer at player position.")
+    local rh2Locations = findRH2Locations()
+    
+    for _, location in pairs(rh2Locations) do
+        if _G.ShowShotRange and (location.Type == "Hoop" or location.Type == "ThreePoint") then
+            createRH2Visualizer(location.Position, _G.RangeDistance, location.Type)
+        end
+        
+        if _G.ShowDunkRange and location.Type == "Dunk" then
+            createRH2Visualizer(location.Position, _G.RangeDistance, location.Type)
+        end
+        
+        if _G.ShowPassRange and location.Type == "Teammate" then
+            createRH2Visualizer(location.Position, _G.RangeDistance, location.Type)
+        end
+    end
+    
+    if #rh2Locations == 0 then
+        print("No RH2 locations found. Creating sample visualizers.")
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            createRangeVisualizer(LocalPlayer.Character.HumanoidRootPart.Position, _G.RangeDistance)
+            createRH2Visualizer(LocalPlayer.Character.HumanoidRootPart.Position, _G.RangeDistance, "Sample")
         end
-    end
-end
-
--- Toggle Range Visualizer
-local function toggleRangeVisualizer()
-    _G.ShowBadgeRange = not _G.ShowBadgeRange
-    
-    if _G.ShowBadgeRange then
-        updateRangeVisualizers()
-        Rayfield:Notify({
-            Title = "Range Visualizer",
-            Content = "Badge range visualizer enabled",
-            Duration = 3,
-            Image = nil,
-        })
     else
-        for _, visualizer in pairs(rangeVisualizers) do
-            if visualizer and visualizer.Parent then
-                visualizer:Destroy()
-            end
-        end
-        rangeVisualizers = {}
-        rangeBeams = {}
-        
-        Rayfield:Notify({
-            Title = "Range Visualizer",
-            Content = "Badge range visualizer disabled",
-            Duration = 3,
-            Image = nil,
-        })
+        print("Found " .. #rh2Locations .. " RH2 locations")
     end
-    
-    updateMobileUI()
 end
 
--- Create Mobile UI
+-- Create Mobile UI for RH2
 local function createMobileUI()
     if mobileScreenGui then mobileScreenGui:Destroy() end
     
     mobileScreenGui = Instance.new("ScreenGui")
-    mobileScreenGui.Name = "RangeVisualizerMobileUI"
+    mobileScreenGui.Name = "RH2MobileUI"
     mobileScreenGui.Parent = game.CoreGui
     mobileScreenGui.ResetOnSpawn = false
     
     -- Main Frame
     mobileFrame = Instance.new("Frame")
-    mobileFrame.Size = UDim2.new(0, 180, 0, 120)
+    mobileFrame.Size = UDim2.new(0, 200, 0, 180)
     mobileFrame.Position = UDim2.new(0, 10, 0, 10)
     mobileFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     mobileFrame.BackgroundTransparency = 0.3
@@ -221,26 +230,39 @@ local function createMobileUI()
     title.Size = UDim2.new(1, 0, 0, 25)
     title.Position = UDim2.new(0, 0, 0, 0)
     title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    title.Text = "Range Visualizer"
+    title.Text = "RH2 Visualizer"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.TextSize = 14
     title.Parent = mobileFrame
     
-    -- Toggle Button
-    local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(1, -10, 0, 30)
-    toggleBtn.Position = UDim2.new(0, 5, 0, 30)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    toggleBtn.Text = "Toggle Range"
-    toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    toggleBtn.TextSize = 12
-    toggleBtn.Parent = mobileFrame
-    toggleBtn.MouseButton1Click:Connect(toggleRangeVisualizer)
+    -- Toggle Buttons
+    local buttons = {
+        {"Shot Range", "ShowShotRange"},
+        {"Dunk Range", "ShowDunkRange"}, 
+        {"Pass Range", "ShowPassRange"}
+    }
+    
+    for i, btnData in ipairs(buttons) do
+        local btnName, globalVar = btnData[1], btnData[2]
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(1, -10, 0, 25)
+        button.Position = UDim2.new(0, 5, 0, 25 + (i * 30))
+        button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        button.Text = btnName
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        button.TextSize = 12
+        button.Parent = mobileFrame
+        button.MouseButton1Click:Connect(function()
+            _G[globalVar] = not _G[globalVar]
+            updateRH2Visualizers()
+            updateMobileUI()
+        end)
+    end
     
     -- Range Display
     local rangeLabel = Instance.new("TextLabel")
     rangeLabel.Size = UDim2.new(1, -10, 0, 20)
-    rangeLabel.Position = UDim2.new(0, 5, 0, 65)
+    rangeLabel.Position = UDim2.new(0, 5, 0, 130)
     rangeLabel.BackgroundTransparency = 1
     rangeLabel.Text = "Range: " .. _G.RangeDistance .. " studs"
     rangeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -250,14 +272,15 @@ local function createMobileUI()
     -- Status Display
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Size = UDim2.new(1, -10, 0, 20)
-    statusLabel.Position = UDim2.new(0, 5, 0, 90)
+    statusLabel.Position = UDim2.new(0, 5, 0, 150)
     statusLabel.BackgroundTransparency = 1
-    statusLabel.Text = "Status: Off"
-    statusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    statusLabel.Text = "Active: 0/3"
+    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     statusLabel.TextSize = 12
     statusLabel.Parent = mobileFrame
     
     _G.MobileUIEnabled = true
+    updateMobileUI()
 end
 
 -- Update Mobile UI
@@ -266,19 +289,15 @@ local function updateMobileUI()
     
     local statusLabel = mobileFrame:FindFirstChild("StatusLabel")
     local rangeLabel = mobileFrame:FindFirstChild("RangeLabel")
-    local toggleBtn = mobileFrame:FindFirstChild("ToggleButton")
     
     if statusLabel then
-        statusLabel.Text = "Status: " .. (_G.ShowBadgeRange and "On" or "Off")
-        statusLabel.TextColor3 = _G.ShowBadgeRange and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+        local activeCount = (_G.ShowShotRange and 1 or 0) + (_G.ShowDunkRange and 1 or 0) + (_G.ShowPassRange and 1 or 0)
+        statusLabel.Text = "Active: " .. activeCount .. "/3"
+        statusLabel.TextColor3 = activeCount > 0 and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
     end
     
     if rangeLabel then
         rangeLabel.Text = "Range: " .. _G.RangeDistance .. " studs"
-    end
-    
-    if toggleBtn then
-        toggleBtn.BackgroundColor3 = _G.ShowBadgeRange and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(70, 70, 70)
     end
 end
 
@@ -287,28 +306,42 @@ local function isMobile()
     return UserInputService.TouchEnabled and not UserInputService.MouseEnabled
 end
 
--- Rayfield UI
-local MainTab = Window:CreateTab("Range Visualizer", nil)
-local VisualizerSection = MainTab:CreateSection("Badge Range Settings")
+-- Rayfield UI for RH2
+local MainTab = Window:CreateTab("RH2 Visualizer", nil)
+local VisualizerSection = MainTab:CreateSection("Basketball Range Settings")
 
--- Toggle Visualizer
-local Toggle = MainTab:CreateToggle({
-    Name = "Show Badge Range",
+-- Shot Range Toggle
+local ShotToggle = MainTab:CreateToggle({
+    Name = "Show Shot Range",
     CurrentValue = false,
-    Flag = "ShowBadgeRange",
+    Flag = "ShowShotRange",
     Callback = function(Value)
-        _G.ShowBadgeRange = Value
-        if Value then
-            updateRangeVisualizers()
-        else
-            for _, visualizer in pairs(rangeVisualizers) do
-                if visualizer and visualizer.Parent then
-                    visualizer:Destroy()
-                end
-            end
-            rangeVisualizers = {}
-            rangeBeams = {}
-        end
+        _G.ShowShotRange = Value
+        updateRH2Visualizers()
+        updateMobileUI()
+    end,
+})
+
+-- Dunk Range Toggle
+local DunkToggle = MainTab:CreateToggle({
+    Name = "Show Dunk Range", 
+    CurrentValue = false,
+    Flag = "ShowDunkRange",
+    Callback = function(Value)
+        _G.ShowDunkRange = Value
+        updateRH2Visualizers()
+        updateMobileUI()
+    end,
+})
+
+-- Pass Range Toggle
+local PassToggle = MainTab:CreateToggle({
+    Name = "Show Pass Range",
+    CurrentValue = false,
+    Flag = "ShowPassRange",
+    Callback = function(Value)
+        _G.ShowPassRange = Value
+        updateRH2Visualizers()
         updateMobileUI()
     end,
 })
@@ -316,56 +349,39 @@ local Toggle = MainTab:CreateToggle({
 -- Range Slider
 local Slider = MainTab:CreateSlider({
     Name = "Range Distance",
-    Range = {10, 100},
+    Range = {10, 50},
     Increment = 5,
     Suffix = "studs",
-    CurrentValue = 50,
+    CurrentValue = 30,
     Flag = "RangeDistance",
     Callback = function(Value)
         _G.RangeDistance = Value
-        if _G.ShowBadgeRange then
-            updateRangeVisualizers()
-        end
+        updateRH2Visualizers()
         updateMobileUI()
     end,
-})
-
--- Color Picker
-local ColorPicker = MainTab:CreateColorPicker({
-    Name = "Visualizer Color",
-    Color = Color3.fromRGB(0, 255, 0),
-    Flag = "VisualizerColor",
-    Callback = function(Value)
-        _G.VisualizerColor = Value
-        if _G.ShowBadgeRange then
-            updateRangeVisualizers()
-        end
-    end
 })
 
 -- Refresh Button
 local Button = MainTab:CreateButton({
     Name = "Refresh Visualizers",
     Callback = function()
-        if _G.ShowBadgeRange then
-            updateRangeVisualizers()
-            Rayfield:Notify({
-                Title = "Range Visualizer",
-                Content = "Visualizers refreshed",
-                Duration = 2,
-            })
-        end
+        updateRH2Visualizers()
+        Rayfield:Notify({
+            Title = "RH2 Visualizer",
+            Content = "Visualizers refreshed",
+            Duration = 2,
+        })
     end,
 })
 
 -- Auto-detect mobile and create UI
 spawn(function()
-    wait(2) -- Wait for Rayfield to load
+    wait(2)
     if isMobile() then
         createMobileUI()
         Rayfield:Notify({
             Title = "Mobile Detected",
-            Content = "Touch controls enabled",
+            Content = "RH2 touch controls enabled",
             Duration = 5,
         })
     end
@@ -373,10 +389,9 @@ end)
 
 -- Initialization
 Rayfield:Notify({
-    Title = "Range Visualizer Loaded",
-    Content = "Use to visualize badge ranges",
+    Title = "RH2 Visualizer Loaded",
+    Content = "Use to visualize basketball ranges",
     Duration = 5,
 })
 
-print("Badge Range Visualizer loaded successfully!")
-print("Features: Range visualization, Mobile support, Rayfield UI")
+print("RH2 Basketball Visualizer loaded successfully!")
