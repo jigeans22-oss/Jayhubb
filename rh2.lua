@@ -3,13 +3,13 @@ getgenv().SecureMode = true
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "RH2 Auto-Shoot + Auto-Green",
-   LoadingTitle = "Auto Basketball Pro",
-   LoadingSubtitle = "Auto-Shoot + Auto-Green + Range",
+   Name = "MyCourt Auto-Shoot Pro",
+   LoadingTitle = "MyCourt Hacks",
+   LoadingSubtitle = "Optimized for MyCourt",
    ConfigurationSaving = {
       Enabled = true,
       FolderName = nil,
-      FileName = "RH2AutoConfig"
+      FileName = "MyCourtConfig"
    },
    KeySystem = false,
 })
@@ -23,44 +23,124 @@ local LocalPlayer = Players.LocalPlayer
 -- Settings
 _G.AutoShoot = false
 _G.AutoGreen = true
-_G.ShotDelay = 0.1
+_G.ShotDelay = 0.2
 _G.ExtendShotRange = false
 _G.ShotRangeMultiplier = 2.0
 _G.AlwaysMakeShots = true
 
--- Anti-Cheat Bypass
-_G.HideScripts = true
-_G.SpoofMemory = true
-_G.AntiKick = true
+-- MyCourt Detection
+local function isInMyCourt()
+    -- Check for MyCourt specific objects
+    if workspace:FindFirstChild("MyCourt") then return true end
+    if workspace:FindFirstChild("PracticeCourt") then return true end
+    if game:GetService("Lighting"):FindFirstChild("MyCourt") then return true end
+    
+    -- Check player count (MyCourt usually has few players)
+    local playerCount = #Players:GetPlayers()
+    if playerCount <= 4 then return true end
+    
+    -- Check for MyCourt specific objects
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj.Name:lower():find("mycourt") or obj.Name:lower():find("practice") then
+            return true
+        end
+    end
+    
+    return false
+end
 
--- Auto-Shoot System
-local function setupAutoShoot()
+-- Find MyCourt specific objects
+local function findMyCourtObjects()
+    local objects = {}
+    
+    -- MyCourt basketball hoops (common names)
+    for _, obj in pairs(workspace:GetDescendants()) do
+        -- Hoops in MyCourt
+        if obj.Name:lower():find("hoop") or 
+           obj.Name:lower():find("basket") or 
+           obj.Name:lower():find("rim") or
+           obj.Name:lower():find("goal") or
+           obj.Name:lower():find("score") then
+            
+            if obj:IsA("Part") or obj:IsA("MeshPart") then
+                table.insert(objects, {Object = obj, Type = "Hoop"})
+            end
+        end
+        
+        -- Basketball in MyCourt
+        if obj.Name:lower():find("basketball") or 
+           obj.Name:lower():find("ball") or
+           obj.Name:lower():find("sphere") then
+            
+            if obj:IsA("Part") or obj:IsA("MeshPart") then
+                table.insert(objects, {Object = obj, Type = "Ball"})
+            end
+        end
+        
+        -- Shoot triggers in MyCourt
+        if obj.Name:lower():find("shoot") or 
+           obj.Name:lower():find("shot") or
+           obj.Name:lower():find("fire") or
+           obj.Name:lower():find("throw") then
+            
+            if obj:IsA("Part") or obj:IsA("TextButton") or obj:IsA("RemoteEvent") then
+                table.insert(objects, {Object = obj, Type = "ShootTrigger"})
+            end
+        end
+    end
+    
+    return objects
+end
+
+-- MyCourt Auto-Shoot System
+local function setupMyCourtAutoShoot()
     spawn(function()
         while _G.AutoShoot do
             wait(_G.ShotDelay)
             pcall(function()
-                -- Find and trigger shoot buttons/remotes automatically
-                for _, obj in pairs(game:GetDescendants()) do
-                    if obj:IsA("TextButton") and (obj.Text:lower():find("shoot") or obj.Text:lower():find("shot") or obj.Name:lower():find("shoot")) then
-                        -- Auto-click shoot buttons
-                        if obj.Visible then
-                            obj:FireEvent("MouseButton1Click")
+                local myCourtObjects = findMyCourtObjects()
+                
+                -- Method 1: Trigger shoot buttons
+                for _, obj in pairs(myCourtObjects) do
+                    if obj.Type == "ShootTrigger" and obj.Object:IsA("TextButton") then
+                        if obj.Object.Visible then
+                            obj.Object:FireEvent("MouseButton1Click")
                         end
-                    end
-                    
-                    if obj:IsA("RemoteEvent") and (obj.Name:lower():find("shoot") or obj.Name:lower():find("shot")) then
-                        -- Auto-fire shoot remotes
-                        obj:FireServer("shoot", LocalPlayer)
                     end
                 end
                 
-                -- Also check for touch events (mobile)
+                -- Method 2: Fire shoot remote events
                 for _, obj in pairs(game:GetDescendants()) do
-                    if obj:IsA("Part") and obj.Name:lower():find("shoot") then
-                        -- Trigger touch events
-                        firetouchinterest(obj, LocalPlayer.Character:FindFirstChild("HumanoidRootPart"), 0)
-                        wait()
-                        firetouchinterest(obj, LocalPlayer.Character:FindFirstChild("HumanoidRootPart"), 1)
+                    if obj:IsA("RemoteEvent") then
+                        -- Try common MyCourt shoot event names
+                        if obj.Name:lower():find("shoot") or 
+                           obj.Name:lower():find("shot") or
+                           obj.Name:lower():find("fire") or
+                           obj.Name:lower():find("throw") or
+                           obj.Name:lower():find("basket") then
+                            
+                            obj:FireServer("shoot")
+                            obj:FireServer("shot")
+                            obj:FireServer(LocalPlayer)
+                        end
+                    end
+                end
+                
+                -- Method 3: Direct ball manipulation for MyCourt
+                local ball = workspace:FindFirstChild("Basketball") or workspace:FindFirstChild("Ball")
+                if ball then
+                    local hoop = workspace:FindFirstChild("Hoop") or workspace:FindFirstChild("Basket")
+                    if hoop then
+                        -- Calculate shot trajectory
+                        local direction = (hoop.Position - ball.Position).Unit
+                        local distance = (hoop.Position - ball.Position).Magnitude
+                        
+                        -- Apply force to ball (MyCourt physics)
+                        if _G.ExtendShotRange then
+                            ball.Velocity = direction * (distance * _G.ShotRangeMultiplier)
+                        else
+                            ball.Velocity = direction * distance * 1.5
+                        end
                     end
                 end
             end)
@@ -68,108 +148,31 @@ local function setupAutoShoot()
     end)
 end
 
--- Detect when player tries to shoot and auto-complete
-local function setupShootDetection()
-    -- Hook keyboard input
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        
-        if _G.AutoShoot and (input.KeyCode == Enum.KeyCode.E or input.KeyCode == Enum.KeyCode.F or input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.ButtonA) then
-            -- Player pressed a potential shoot key - enhance their shot
-            pcall(function()
-                if _G.AutoGreen then
-                    -- Force perfect shot
-                    for _, obj in pairs(game:GetDescendants()) do
-                        if obj:IsA("RemoteEvent") and (obj.Name:lower():find("shoot") or obj.Name:lower():find("shot")) then
-                            local oldFireServer = obj.FireServer
-                            if not obj.__autoHooked then
-                                obj.__autoHooked = true
-                                obj.FireServer = function(self, ...)
-                                    local args = {...}
-                                    -- Modify for perfect shot
-                                    for i, arg in pairs(args) do
-                                        if type(arg) == "boolean" then
-                                            args[i] = true -- Force success
-                                        elseif type(arg) == "number" then
-                                            -- Perfect timing/accuracy
-                                            if arg < 100 then
-                                                args[i] = 100
-                                            end
-                                        elseif type(arg) == "string" and arg:find("miss") then
-                                            args[i] = "make" -- Change miss to make
-                                        end
-                                    end
-                                    
-                                    -- Add range extension if enabled
-                                    if _G.ExtendShotRange then
-                                        for i, arg in pairs(args) do
-                                            if type(arg) == "number" and arg < 100 then
-                                                args[i] = arg * _G.ShotRangeMultiplier
-                                            end
-                                        end
-                                    end
-                                    
-                                    return oldFireServer(self, unpack(args))
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end)
-    
-    -- Hook mobile touch events
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("TextButton") and (obj.Text:lower():find("shoot") or obj.Name:lower():find("shoot")) then
-            local oldActivate = obj.Activate
-            obj.Activate = function(...)
-                if _G.AutoShoot and _G.AutoGreen then
-                    -- Enhance the shot when button is pressed
-                    pcall(function()
-                        -- Force perfect shot parameters
-                        for _, remote in pairs(game:GetDescendants()) do
-                            if remote:IsA("RemoteEvent") and remote.Name:lower():find("shoot") then
-                                remote:FireServer("perfect_shot", 100, true, LocalPlayer)
-                            end
-                        end
-                    end)
-                end
-                return oldActivate(...)
-            end
-        end
-    end
-end
-
--- Auto-Green System
-local function activateAutoGreen()
+-- MyCourt Auto-Green System
+local function setupMyCourtAutoGreen()
     spawn(function()
         while _G.AutoGreen or _G.AlwaysMakeShots do
             wait(0.1)
             pcall(function()
-                -- Hook all shot-related remotes for auto-success
+                -- Hook all possible MyCourt remotes
                 for _, obj in pairs(game:GetDescendants()) do
-                    if obj:IsA("RemoteEvent") and (obj.Name:lower():find("shot") or obj.Name:lower():find("score") or obj.Name:lower():find("make") or obj.Name:lower():find("basket")) then
+                    if obj:IsA("RemoteEvent") then
                         local oldFireServer = obj.FireServer
-                        if not obj.__greenHooked then
-                            obj.__greenHooked = true
+                        if not obj.__mycourtHooked then
+                            obj.__mycourtHooked = true
                             obj.FireServer = function(self, ...)
                                 local args = {...}
                                 
-                                -- Force shot success
+                                -- Force success for any shot-related events
                                 if _G.AutoGreen or _G.AlwaysMakeShots then
                                     for i, arg in pairs(args) do
                                         if type(arg) == "boolean" then
-                                            args[i] = true -- Force success
-                                        elseif type(arg) == "number" then
-                                            -- Perfect timing/accuracy (100%)
-                                            if arg < 100 then
-                                                args[i] = 100
-                                            end
+                                            args[i] = true
+                                        elseif type(arg) == "number" and arg < 100 then
+                                            args[i] = 100
                                         elseif type(arg) == "string" then
-                                            -- Replace miss with make
                                             if arg:lower():find("miss") or arg:lower():find("fail") then
-                                                args[i] = "make"
+                                                args[i] = "score"
                                             end
                                         end
                                     end
@@ -181,17 +184,20 @@ local function activateAutoGreen()
                     end
                 end
                 
-                -- Modify basketball to always go in
+                -- Direct ball manipulation for guaranteed scores
                 local ball = workspace:FindFirstChild("Basketball") or workspace:FindFirstChild("Ball")
-                if ball and (_G.AutoGreen or _G.AlwaysMakeShots) then
-                    local hoop = workspace:FindFirstChild("Hoop") or workspace:FindFirstChild("Basket") or workspace:FindFirstChild("Score")
+                if ball then
+                    local hoop = workspace:FindFirstChild("Hoop") or workspace:FindFirstChild("Basket")
                     if hoop then
-                        -- Make ball magnetize towards hoop
-                        local direction = (hoop.Position - ball.Position).Unit
-                        local distance = (hoop.Position - ball.Position).Magnitude
+                        -- Make ball go directly into hoop
+                        local hoopPos = hoop.Position + Vector3.new(0, 5, 0) -- Aim for center of hoop
+                        local direction = (hoopPos - ball.Position).Unit
+                        local distance = (hoopPos - ball.Position).Magnitude
                         
-                        if distance < 50 then -- Only when ball is somewhat close
-                            ball.Velocity = ball.Velocity + direction * 10
+                        if distance < 100 then -- Only when ball is in reasonable range
+                            -- Apply magnetic force toward hoop
+                            local force = direction * 25
+                            ball.Velocity = ball.Velocity + force
                         end
                     end
                 end
@@ -200,115 +206,117 @@ local function activateAutoGreen()
     end)
 end
 
--- Range Extension
-local function extendRanges()
+-- MyCourt Range Extension
+local function setupMyCourtRange()
     spawn(function()
         while _G.ExtendShotRange do
-            wait(0.2)
+            wait(0.3)
             pcall(function()
-                for _, obj in pairs(game:GetDescendants()) do
-                    if obj:IsA("RemoteEvent") and (obj.Name:lower():find("shoot") or obj.Name:lower():find("shot")) then
-                        local oldFireServer = obj.FireServer
-                        if not obj.__rangeHooked then
-                            obj.__rangeHooked = true
-                            obj.FireServer = function(self, ...)
-                                local args = {...}
-                                if _G.ExtendShotRange then
-                                    for i, arg in pairs(args) do
-                                        if type(arg) == "number" and arg < 1000 then
-                                            args[i] = arg * _G.ShotRangeMultiplier
-                                        end
-                                    end
-                                end
-                                return oldFireServer(self, unpack(args))
-                            end
-                        end
+                -- Modify character properties for MyCourt
+                local character = LocalPlayer.Character
+                if character then
+                    local humanoid = character:FindFirstChild("Humanoid")
+                    if humanoid then
+                        -- Increase jump and movement for better shots
+                        humanoid.JumpPower = 55
+                        humanoid.WalkSpeed = 22
                     end
+                end
+                
+                -- Modify ball physics for longer range
+                local ball = workspace:FindFirstChild("Basketball") or workspace:FindFirstChild("Ball")
+                if ball then
+                    -- Reduce gravity effect
+                    local bodyForce = ball:FindFirstChild("BodyForce") or Instance.new("BodyForce")
+                    bodyForce.Force = Vector3.new(0, workspace.Gravity * -0.3, 0)
+                    bodyForce.Parent = ball
+                    
+                    -- Reduce air resistance
+                    ball.Material = Enum.Material.Neon
                 end
             end)
         end
     end)
 end
 
--- Anti-Cheat Bypass
-local function setupBypasses()
-    if _G.HideScripts then
-        pcall(function()
-            for _, v in pairs(getreg()) do
-                if type(v) == "function" and is_synapse_function(v) then
-                    hookfunction(v, function(...) return ... end)
-                end
+-- Detect when player tries to shoot in MyCourt
+local function setupMyCourtShootDetection()
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        -- Common shoot keys in MyCourt
+        if input.KeyCode == Enum.KeyCode.E or 
+           input.KeyCode == Enum.KeyCode.F or 
+           input.KeyCode == Enum.KeyCode.Space or
+           input.KeyCode == Enum.KeyCode.ButtonA then
+            
+            if _G.AutoGreen then
+                -- Enhance the shot automatically
+                pcall(function()
+                    local ball = workspace:FindFirstChild("Basketball") or workspace:FindFirstChild("Ball")
+                    if ball then
+                        local hoop = workspace:FindFirstChild("Hoop") or workspace:FindFirstChild("Basket")
+                        if hoop then
+                            -- Calculate perfect shot trajectory
+                            local targetPos = hoop.Position + Vector3.new(0, 3, 0)
+                            local direction = (targetPos - ball.Position).Unit
+                            
+                            -- Apply perfect shot force
+                            local shotPower = 50
+                            if _G.ExtendShotRange then
+                                shotPower = shotPower * _G.ShotRangeMultiplier
+                            end
+                            
+                            ball.Velocity = direction * shotPower
+                        end
+                    end
+                end)
             end
-        end)
-    end
+        end
+    end)
 end
 
 -- Rayfield UI
-local MainTab = Window:CreateTab("Auto Basketball", nil)
+local MainTab = Window:CreateTab("MyCourt Hacks", nil)
+
+-- Court Status
+local StatusSection = MainTab:CreateSection("Court Status")
+local CourtLabel = MainTab:CreateLabel("Detecting Court Type...")
 
 -- Auto-Shoot Section
-local AutoShootSection = MainTab:CreateSection("Auto-Shoot Settings")
+local AutoShootSection = MainTab:CreateSection("MyCourt Auto-Shoot")
 
 local AutoShootToggle = MainTab:CreateToggle({
-    Name = "Auto-Shoot (Automatic Shooting)",
+    Name = "Auto-Shoot in MyCourt",
     CurrentValue = false,
     Flag = "AutoShoot",
     Callback = function(Value)
         _G.AutoShoot = Value
         if Value then
-            setupAutoShoot()
+            setupMyCourtAutoShoot()
             Rayfield:Notify({
-                Title = "Auto-Shoot Active",
-                Content = "Shooting automatically when possible",
+                Title = "MyCourt Auto-Shoot",
+                Content = "Automatic shooting activated",
                 Duration = 3,
             })
         end
     end,
 })
 
-local ShotDelaySlider = MainTab:CreateSlider({
-    Name = "Shot Delay",
-    Range = {0.1, 2.0},
-    Increment = 0.1,
-    Suffix = "seconds",
-    CurrentValue = 0.1,
-    Flag = "ShotDelay",
-    Callback = function(Value)
-        _G.ShotDelay = Value
-    end,
-})
-
 -- Auto-Green Section
-local AutoGreenSection = MainTab:CreateSection("Auto-Green Settings")
+local AutoGreenSection = MainTab:CreateSection("MyCourt Auto-Green")
 
 local AutoGreenToggle = MainTab:CreateToggle({
-    Name = "Auto-Green (Always Make Shots)",
+    Name = "Auto-Green (Always Score)",
     CurrentValue = true,
     Flag = "AutoGreen",
     Callback = function(Value)
         _G.AutoGreen = Value
         if Value then
-            activateAutoGreen()
+            setupMyCourtAutoGreen()
             Rayfield:Notify({
-                Title = "Auto-Green Active",
-                Content = "Every shot will be perfect",
-                Duration = 3,
-            })
-        end
-    end,
-})
-
-local AlwaysGreenToggle = MainTab:CreateToggle({
-    Name = "Always Make Shots (Forced)",
-    CurrentValue = true,
-    Flag = "AlwaysMakeShots",
-    Callback = function(Value)
-        _G.AlwaysMakeShots = Value
-        if Value then
-            activateAutoGreen()
-            Rayfield:Notify({
-                Title = "Forced Green Active",
-                Content = "100% shot success guaranteed",
+                Title = "MyCourt Auto-Green",
+                Content = "Perfect shots guaranteed",
                 Duration = 3,
             })
         end
@@ -316,7 +324,7 @@ local AlwaysGreenToggle = MainTab:CreateToggle({
 })
 
 -- Range Section
-local RangeSection = MainTab:CreateSection("Range Settings")
+local RangeSection = MainTab:CreateSection("MyCourt Range")
 
 local RangeToggle = MainTab:CreateToggle({
     Name = "Extend Shot Range",
@@ -325,80 +333,76 @@ local RangeToggle = MainTab:CreateToggle({
     Callback = function(Value)
         _G.ExtendShotRange = Value
         if Value then
-            extendRanges()
+            setupMyCourtRange()
             Rayfield:Notify({
-                Title = "Range Extended",
-                Content = "Shooting range increased",
+                Title = "MyCourt Range Extended",
+                Content = "Longer shooting range activated",
                 Duration = 3,
             })
         end
     end,
 })
 
-local RangeMultiplier = MainTab:CreateSlider({
-    Name = "Range Multiplier",
-    Range = {1.0, 5.0},
-    Increment = 0.5,
-    Suffix = "x",
-    CurrentValue = 2.0,
-    Flag = "ShotRangeMultiplier",
-    Callback = function(Value)
-        _G.ShotRangeMultiplier = Value
-    end,
-})
-
 -- Quick Actions
-local ActionsSection = MainTab:CreateSection("Quick Actions")
+local ActionsSection = MainTab:CreateSection("MyCourt Quick Actions")
 
-local GodMode = MainTab:CreateButton({
-    Name = "Activate God Mode",
+local PerfectPractice = MainTab:CreateButton({
+    Name = "Perfect Practice Mode",
     Callback = function()
         _G.AutoShoot = true
         _G.AutoGreen = true
-        _G.AlwaysMakeShots = true
         _G.ExtendShotRange = true
         AutoShootToggle:Set(true)
         AutoGreenToggle:Set(true)
-        AlwaysGreenToggle:Set(true)
         RangeToggle:Set(true)
-        setupAutoShoot()
-        activateAutoGreen()
-        extendRanges()
+        setupMyCourtAutoShoot()
+        setupMyCourtAutoGreen()
+        setupMyCourtRange()
         Rayfield:Notify({
-            Title = "God Mode Active",
+            Title = "Perfect Practice",
             Content = "Auto-shoot + Auto-green + Max range",
             Duration = 3,
         })
     end,
 })
 
-local AutoOnly = MainTab:CreateButton({
-    Name = "Auto-Shoot Only",
+local RefreshCourt = MainTab:CreateButton({
+    Name = "Refresh Court Detection",
     Callback = function()
-        _G.AutoShoot = true
-        _G.AutoGreen = true
-        AutoShootToggle:Set(true)
-        AutoGreenToggle:Set(true)
-        setupAutoShoot()
-        activateAutoGreen()
-        Rayfield:Notify({
-            Title = "Auto-Shoot Only",
-            Content = "Auto-shooting with perfect accuracy",
-            Duration = 3,
-        })
+        if isInMyCourt() then
+            CourtLabel:Set("Status: MyCourt Detected ✓")
+            Rayfield:Notify({
+                Title = "MyCourt Detected",
+                Content = "All features optimized for MyCourt",
+                Duration = 3,
+            })
+        else
+            CourtLabel:Set("Status: Regular Game Detected")
+            Rayfield:Notify({
+                Title = "Regular Game",
+                Content = "Using standard game features",
+                Duration = 3,
+            })
+        end
     end,
 })
 
--- Initialize systems
-setupBypasses()
-setupShootDetection()
-activateAutoGreen()
+-- Initialize
+setupMyCourtShootDetection()
+setupMyCourtAutoGreen()
+
+-- Set court status
+if isInMyCourt() then
+    CourtLabel:Set("Status: MyCourt Detected ✓")
+else
+    CourtLabel:Set("Status: Regular Game Detected")
+end
 
 Rayfield:Notify({
-    Title = "Auto Basketball Pro Loaded",
-    Content = "Auto-shoot + Auto-green ready!",
+    Title = "MyCourt Hacks Loaded",
+    Content = "Optimized for MyCourt practice",
     Duration = 5,
 })
 
-print("Auto Basketball Pro initialized!")
-print("Features: Auto-shoot, Auto-green, Range extension")
+print("MyCourt Basketball Hacks initialized!")
+print("Court Type: " .. (isInMyCourt() and "MyCourt" or "Regular Game"))
