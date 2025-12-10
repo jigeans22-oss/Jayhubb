@@ -1,592 +1,581 @@
---[[
-	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
-]]
-local S, E = pcall(function()
-    if _G.Stepped then
-        _G.Stepped:Disconnect()
-    end
-    if _G.InputBegan then
-        _G.InputBegan:Disconnect()
-    end
-    if _G.TouchTap then
-        _G.TouchTap:Disconnect()
-    end
-    if _G.TouchGui then
-        _G.TouchGui:Destroy()
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Terrain = workspace:FindFirstChildOfClass("Terrain")
+
+-- Load Obscidian UI
+local Obscidian = loadstring(game:HttpGet("https://raw.githubusercontent.com/ObscidianHub/Obscidian/main/obscidian.lua"))()
+
+-- Create window
+local Window = Obscidian:New({
+    Name = "FPS Booster",
+    Icon = "rbxassetid://4483362458",
+    ShowLogo = true,
+    Logo = "rbxassetid://4483362458",
+    Theme = "Dark",
+    Size = UDim2.new(0, 450, 0, 400)
+})
+
+-- Store original settings
+local OriginalSettings = {
+    GraphicsQuality = Enum.SavedQualitySetting.QualityLevel10,
+    Shadows = Lighting.ShadowSoftness,
+    Lighting = Lighting.GlobalShadows,
+    Materials = sethiddenproperty or set_hidden_property,
+    Particles = {},
+    Effects = {},
+    Terrain = {}
+}
+
+-- Main tab
+local MainTab = Window:Tab("Boost", "rbxassetid://4483362458")
+
+-- FPS counter
+local FPSCounter = Instance.new("ScreenGui")
+FPSCounter.Name = "FPSDisplay"
+FPSCounter.ResetOnSpawn = false
+FPSCounter.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local FPSLabel = Instance.new("TextLabel")
+FPSLabel.Name = "FPS"
+FPSLabel.BackgroundTransparency = 1
+FPSLabel.Text = "FPS: 60"
+FPSLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+FPSLabel.TextSize = 18
+FPSLabel.Font = Enum.Font.Code
+FPSLabel.Position = UDim2.new(0, 10, 0, 10)
+FPSLabel.Size = UDim2.new(0, 100, 0, 25)
+FPSLabel.Parent = FPSCounter
+
+local frameCount = 0
+local fps = 0
+local lastTime = tick()
+
+RunService.RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    local currentTime = tick()
+    if currentTime - lastTime >= 1 then
+        fps = math.floor(frameCount / (currentTime - lastTime))
+        frameCount = 0
+        lastTime = currentTime
+        FPSLabel.Text = "FPS: " .. fps
     end
 end)
 
-if S then
-    game.StarterGui:SetCore("SendNotification", {
-        Title = "Silent Aim",
-        Text = "Silent Aim was reset, Mode: Normal Aimbot",
-        Duration = 3
-    })
+-- FPS display toggle
+local FPSDisplayEnabled = true
+MainTab:Toggle({
+    Name = "Show FPS Counter",
+    Default = true,
+    Callback = function(value)
+        FPSDisplayEnabled = value
+        if value then
+            FPSCounter.Parent = game.CoreGui
+        else
+            FPSCounter.Parent = nil
+        end
+    end
+})
 
-    _G.Stepped = nil
-    _G.InputBegan = nil
-    _G.TouchTap = nil
-    _G.TouchGui = nil
+-- Ultra performance mode
+local UltraMode = false
+MainTab:Toggle({
+    Name = "Ultra Performance Mode",
+    Default = false,
+    Callback = function(value)
+        UltraMode = value
+        if value then
+            applyUltraSettings()
+        else
+            restoreOriginalSettings()
+        end
+    end
+})
+
+-- Graphics quality slider
+MainTab:Slider({
+    Name = "Graphics Quality",
+    Min = 1,
+    Max = 10,
+    Default = 10,
+    Callback = function(value)
+        settings().Rendering.QualityLevel = value
+        if value <= 3 then
+            applyLowGraphics()
+        end
+    end
+})
+
+-- Individual settings
+local settingsToggles = {}
+
+MainTab:Toggle({
+    Name = "Disable Shadows",
+    Default = false,
+    Callback = function(value)
+        settingsToggles.Shadows = value
+        if value then
+            Lighting.GlobalShadows = false
+            Lighting.ShadowSoftness = 0
+        else
+            Lighting.GlobalShadows = true
+            Lighting.ShadowSoftness = OriginalSettings.Shadows
+        end
+    end
+})
+
+MainTab:Toggle({
+    Name = "Disable Lighting",
+    Default = false,
+    Callback = function(value)
+        settingsToggles.Lighting = value
+        if value then
+            Lighting.Outlines = false
+            Lighting.Brightness = 2
+            Lighting.Ambient = Color3.fromRGB(127, 127, 127)
+            Lighting.ColorShift_Bottom = Color3.fromRGB(0, 0, 0)
+            Lighting.ColorShift_Top = Color3.fromRGB(0, 0, 0)
+            Lighting.EnvironmentDiffuseScale = 0
+            Lighting.EnvironmentSpecularScale = 0
+        else
+            Lighting.Outlines = true
+            Lighting.Brightness = 1
+            Lighting.Ambient = Color3.fromRGB(0.5, 0.5, 0.5)
+            Lighting.ColorShift_Bottom = Color3.fromRGB(0, 0, 0)
+            Lighting.ColorShift_Top = Color3.fromRGB(0, 0, 0)
+            Lighting.EnvironmentDiffuseScale = 1
+            Lighting.EnvironmentSpecularScale = 1
+        end
+    end
+})
+
+MainTab:Toggle({
+    Name = "Remove Textures",
+    Default = false,
+    Callback = function(value)
+        settingsToggles.Textures = value
+        if value then
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("BasePart") then
+                    if obj:FindFirstChildWhichIsA("Texture") then
+                        for _, texture in pairs(obj:GetChildren()) do
+                            if texture:IsA("Texture") then
+                                texture:Destroy()
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+})
+
+MainTab:Toggle({
+    Name = "Disable Particles",
+    Default = false,
+    Callback = function(value)
+        settingsToggles.Particles = value
+        if value then
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("ParticleEmitter") or obj:IsA("Beam") or obj:IsA("Trail") then
+                    obj.Enabled = false
+                    if not OriginalSettings.Particles[obj] then
+                        OriginalSettings.Particles[obj] = obj.Enabled
+                    end
+                end
+            end
+        else
+            for obj, originalState in pairs(OriginalSettings.Particles) do
+                if obj and obj.Parent then
+                    obj.Enabled = originalState
+                end
+            end
+        end
+    end
+})
+
+MainTab:Toggle({
+    Name = "Remove Terrain",
+    Default = false,
+    Callback = function(value)
+        settingsToggles.Terrain = value
+        if value and Terrain then
+            Terrain.Transparency = 1
+            OriginalSettings.Terrain.Transparency = Terrain.Transparency
+        elseif Terrain then
+            Terrain.Transparency = OriginalSettings.Terrain.Transparency or 0
+        end
+    end
+})
+
+MainTab:Toggle({
+    Name = "Low Quality Water",
+    Default = false,
+    Callback = function(value)
+        settingsToggles.Water = value
+        if value then
+            if Terrain and Terrain:FindFirstChildOfClass("Water") then
+                for _, water in pairs(Terrain:GetChildren()) do
+                    if water:IsA("Water") then
+                        water.Transparency = 0.8
+                        water.WaveSize = 0
+                        water.WaveSpeed = 0
+                        if not OriginalSettings.Effects[water] then
+                            OriginalSettings.Effects[water] = {
+                                Transparency = water.Transparency,
+                                WaveSize = water.WaveSize,
+                                WaveSpeed = water.WaveSpeed
+                            }
+                        end
+                    end
+                end
+            end
+        else
+            for obj, settings in pairs(OriginalSettings.Effects) do
+                if obj and obj.Parent then
+                    obj.Transparency = settings.Transparency
+                    obj.WaveSize = settings.WaveSize
+                    obj.WaveSpeed = settings.WaveSpeed
+                end
+            end
+        end
+    end
+})
+
+-- Optimization functions
+function applyUltraSettings()
+    -- Set lowest graphics
+    settings().Rendering.QualityLevel = 1
+    
+    -- Disable all shadows
+    Lighting.GlobalShadows = false
+    Lighting.ShadowSoftness = 0
+    Lighting.ShadowColor = Color3.fromRGB(178, 178, 183)
+    
+    -- Remove effects
+    Lighting.FogEnd = 1000000
+    Lighting.Bloom.Enabled = false
+    Lighting.Blur.Enabled = false
+    Lighting.SunRays.Enabled = false
+    Lighting.ColorCorrection.Enabled = false
+    Lighting.DepthOfField.Enabled = false
+    
+    -- Set basic lighting
+    Lighting.Brightness = 2
+    Lighting.Ambient = Color3.fromRGB(127, 127, 127)
+    Lighting.Outlines = false
+    
+    -- Remove materials if possible
+    if sethiddenproperty then
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") then
+                pcall(function()
+                    sethiddenproperty(part, "Material", Enum.Material.Plastic)
+                end)
+            end
+        end
+    end
+    
+    -- Remove particles
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("ParticleEmitter") or obj:IsA("Beam") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") then
+            obj.Enabled = false
+            if not OriginalSettings.Effects[obj] then
+                OriginalSettings.Effects[obj] = obj.Enabled
+            end
+        end
+    end
+    
+    -- Remove textures
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            if obj:FindFirstChildWhichIsA("Texture") then
+                for _, texture in pairs(obj:GetChildren()) do
+                    if texture:IsA("Texture") then
+                        texture:Destroy()
+                    end
+                end
+            end
+            if obj:FindFirstChildWhichIsA("Decal") then
+                for _, decal in pairs(obj:GetChildren()) do
+                    if decal:IsA("Decal") then
+                        decal:Destroy()
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Disable terrain
+    if Terrain then
+        Terrain.Transparency = 1
+        OriginalSettings.Terrain.Transparency = Terrain.Transparency
+    end
 end
 
-local Player = game.Players.LocalPlayer
-local UIS = game:GetService("UserInputService")
-local RS = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
+function applyLowGraphics()
+    settings().Rendering.QualityLevel = 1
+    Lighting.GlobalShadows = false
+    Lighting.Outlines = false
+end
 
-local Playground = (game.PlaceId == 4923146720)
-local IsInFooting = false
-
--- Create mobile button for shooting
-local function CreateMobileButton()
-    if _G.TouchGui then
-        _G.TouchGui:Destroy()
+function restoreOriginalSettings()
+    settings().Rendering.QualityLevel = OriginalSettings.GraphicsQuality
+    
+    if OriginalSettings.Shadows then
+        Lighting.ShadowSoftness = OriginalSettings.Shadows
     end
     
-    local TouchGui = Instance.new("ScreenGui")
-    TouchGui.Name = "MobileShootGui"
-    TouchGui.DisplayOrder = 10
-    TouchGui.ResetOnSpawn = false
-    TouchGui.Parent = Player.PlayerGui
+    Lighting.GlobalShadows = true
+    Lighting.Outlines = true
+    Lighting.Brightness = 1
+    Lighting.Ambient = Color3.fromRGB(0.5, 0.5, 0.5)
     
-    local ShootButton = Instance.new("TextButton")
-    ShootButton.Name = "ShootButton"
-    ShootButton.Text = "SHOOT (X)"
-    ShootButton.TextScaled = true
-    ShootButton.Font = Enum.Font.GothamBold
-    ShootButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ShootButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-    ShootButton.BackgroundTransparency = 0.3
-    ShootButton.Size = UDim2.new(0, 120, 0, 120)
-    ShootButton.Position = UDim2.new(1, -140, 1, -140)
-    ShootButton.AnchorPoint = Vector2.new(0.5, 0.5)
-    ShootButton.Parent = TouchGui
-    
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0.3, 0)
-    UICorner.Parent = ShootButton
-    
-    local UIStroke = Instance.new("UIStroke")
-    UIStroke.Color = Color3.fromRGB(255, 255, 255)
-    UIStroke.Thickness = 3
-    UIStroke.Parent = ShootButton
-    
-    -- Make button draggable
-    local Dragging = false
-    local DragInput, DragStart, StartPos
-    
-    local function Update(input)
-        local Delta = input.Position - DragStart
-        ShootButton.Position = UDim2.new(
-            StartPos.X.Scale, 
-            StartPos.X.Offset + Delta.X,
-            StartPos.Y.Scale, 
-            StartPos.Y.Offset + Delta.Y
-        )
+    -- Restore particles
+    for obj, enabled in pairs(OriginalSettings.Particles) do
+        if obj and obj.Parent then
+            obj.Enabled = enabled
+        end
     end
     
-    ShootButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Dragging = true
-            DragStart = input.Position
-            StartPos = ShootButton.Position
-            
-            -- Visual feedback when pressing
-            ShootButton.BackgroundTransparency = 0.1
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    Dragging = false
-                    ShootButton.BackgroundTransparency = 0.3
+    -- Restore terrain
+    if Terrain and OriginalSettings.Terrain.Transparency then
+        Terrain.Transparency = OriginalSettings.Terrain.Transparency
+    end
+    
+    -- Restore effects
+    for obj, settings in pairs(OriginalSettings.Effects) do
+        if obj and obj.Parent then
+            if type(settings) == "boolean" then
+                obj.Enabled = settings
+            elseif type(settings) == "table" then
+                for prop, value in pairs(settings) do
+                    pcall(function()
+                        obj[prop] = value
+                    end)
+                end
+            end
+        end
+    end
+end
+
+-- Buttons tab
+local ButtonsTab = Window:Tab("Quick Actions", "rbxassetid://4483362458")
+
+ButtonsTab:Button({
+    Name = "Apply Maximum Boost",
+    Callback = function()
+        applyUltraSettings()
+        for _, toggle in pairs(settingsToggles) do
+            if type(toggle) == "function" then
+                toggle(true)
+            end
+        end
+    end
+})
+
+ButtonsTab:Button({
+    Name = "Reset All Settings",
+    Callback = function()
+        restoreOriginalSettings()
+        for _, toggle in pairs(settingsToggles) do
+            if type(toggle) == "function" then
+                toggle(false)
+            end
+        end
+        UltraMode = false
+    end
+})
+
+ButtonsTab:Button({
+    Name = "Remove All Decals",
+    Callback = function()
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Decal") then
+                obj:Destroy()
+            end
+        end
+    end
+})
+
+ButtonsTab:Button({
+    Name = "Disable All Lights",
+    Callback = function()
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("PointLight") or obj:IsA("SurfaceLight") or obj:IsA("SpotLight") then
+                obj.Enabled = false
+            end
+        end
+    end
+})
+
+ButtonsTab:Button({
+    Name = "Reduce Render Distance",
+    Callback = function()
+        if sethiddenproperty then
+            pcall(function()
+                sethiddenproperty(game:GetService("Workspace").CurrentCamera, "MaxAxisRenderDistance", 100)
+            end)
+        end
+    end
+})
+
+-- Advanced tab
+local AdvancedTab = Window:Tab("Advanced", "rbxassetid://4483362458")
+
+AdvancedTab:Toggle({
+    Name = "Disable Character Animations",
+    Default = false,
+    Callback = function(value)
+        if value then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, false)
+                        humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+                        humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+                        humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
+                    end
+                end
+            end
+        else
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, true)
+                        humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+                        humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+                        humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
+                    end
+                end
+            end
+        end
+    end
+})
+
+AdvancedTab:Toggle({
+    Name = "Reduce Physics Quality",
+    Default = false,
+    Callback = function(value)
+        if value then
+            settings().Physics.ThrottleAdjustTime = 2
+            settings().Physics.AllowSleep = true
+        else
+            settings().Physics.ThrottleAdjustTime = 0.5
+            settings().Physics.AllowSleep = false
+        end
+    end
+})
+
+AdvancedTab:Slider({
+    Name = "Texture Quality",
+    Min = 1,
+    Max = 10,
+    Default = 10,
+    Callback = function(value)
+        if sethiddenproperty then
+            pcall(function()
+                sethiddenproperty(game, "TextureQuality", value / 10)
+            end)
+        end
+    end
+})
+
+-- Performance monitor
+local PerformanceTab = Window:Tab("Monitor", "rbxassetid://4483362458")
+
+local memLabel = Instance.new("TextLabel")
+memLabel.Name = "Memory"
+memLabel.BackgroundTransparency = 1
+memLabel.Text = "Memory: 0 MB"
+memLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+memLabel.TextSize = 16
+memLabel.Font = Enum.Font.Code
+memLabel.Position = UDim2.new(0, 10, 0, 40)
+memLabel.Size = UDim2.new(0, 150, 0, 25)
+memLabel.Parent = FPSCounter
+
+local pingLabel = Instance.new("TextLabel")
+pingLabel.Name = "Ping"
+pingLabel.BackgroundTransparency = 1
+pingLabel.Text = "Ping: 0ms"
+pingLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
+pingLabel.TextSize = 16
+pingLabel.Font = Enum.Font.Code
+pingLabel.Position = UDim2.new(0, 10, 0, 70)
+pingLabel.Size = UDim2.new(0, 150, 0, 25)
+pingLabel.Parent = FPSCounter
+
+task.spawn(function()
+    while task.wait(1) do
+        -- Memory usage
+        local mem = collectgarbage("count")
+        memLabel.Text = string.format("Memory: %.1f MB", mem / 1024)
+        
+        -- Ping
+        local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
+        pingLabel.Text = string.format("Ping: %dms", ping)
+    end
+end)
+
+PerformanceTab:Toggle({
+    Name = "Show Performance Stats",
+    Default = true,
+    Callback = function(value)
+        if value then
+            memLabel.Visible = true
+            pingLabel.Visible = true
+        else
+            memLabel.Visible = false
+            pingLabel.Visible = false
+        end
+    end
+})
+
+PerformanceTab:Button({
+    Name = "Collect Garbage",
+    Callback = function()
+        collectgarbage("collect")
+    end
+})
+
+PerformanceTab:Button({
+    Name = "Clear Instances",
+    Callback = function()
+        for _, instance in pairs(game:GetDescendants()) do
+            if instance:IsA("Sound") and not instance.Playing then
+                instance:Destroy()
+            end
+        end
+    end
+})
+
+-- Auto-optimize
+PerformanceTab:Toggle({
+    Name = "Auto-Optimize at Low FPS",
+    Default = false,
+    Callback = function(value)
+        if value then
+            task.spawn(function()
+                while task.wait(5) do
+                    if fps < 30 and not UltraMode then
+                        applyLowGraphics()
+                    end
                 end
             end)
         end
-    end)
-    
-    ShootButton.InputChanged:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) and Dragging then
-            DragInput = input
-        end
-    end)
-    
-    ShootButton.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            ShootButton.BackgroundTransparency = 0.3
-        end
-    end)
-    
-    UIS.InputChanged:Connect(function(input)
-        if input == DragInput and Dragging then
-            Update(input)
-        end
-    end)
-    
-    _G.TouchGui = TouchGui
-    _G.ShootButton = ShootButton
+    end
+})
+
+-- Initialize
+FPSCounter.Parent = game.CoreGui
+Window:SelectTab(MainTab)
+
+-- Apply initial low settings if FPS is low
+task.wait(2)
+if fps < 30 then
+    applyLowGraphics()
 end
-
--- Initialize mobile UI
-CreateMobileButton()
-
-local HL = Instance.new("Highlight")
-HL.Enabled = false
-if Player.Character then
-    HL.Adornee = Player.Character
-end
-HL.FillColor = Color3.fromRGB(25, 255, 25)
-HL.OutlineColor = Color3.fromRGB(0, 255, 0)
-HL.Parent = game:GetService("CoreGui")
-
--- Character added event
-Player.CharacterAdded:Connect(function(character)
-    HL.Adornee = character
-    task.wait(1)
-end)
-
-local Goals = {} do
-    for _, Obj in next, game:GetDescendants() do
-        if Obj.Name == "Goal" and Obj:IsA("BasePart") then
-            table.insert(Goals, Obj)
-        elseif Obj.Name == "Part" and Obj:IsA("BasePart") and Obj.Size == Vector3.new(5, 1, 5) then
-            table.insert(Goals, Obj)
-        end
-    end
-end
-
-local Shuffled, Selected do
-    for _, Garbage in next, getgc(true) do
-        if type(Garbage) == "function" and getinfo(Garbage)["name"] == "selected1" then
-            Selected = Garbage
-        elseif type(Garbage) == "table" and rawget(Garbage, "1") and rawget(Garbage, "1") ~= true then
-            Shuffled = Garbage
-        end
-    end
-end
-
-local Clicker do
-    if Playground == false then
-        Clicker = getupvalue(Selected, 3)
-    else
-        Clicker = getupvalue(Selected, 5)
-    end
-end
-
-local GetClock = function()
-    local OldClock = getupvalue(Selected, 3)
-    local NewClock = OldClock + 1
-    
-    setupvalue(Selected, 3, NewClock)
-    
-    return NewClock
-end
-
-local GetKeyFromKeyTable = function()
-    local Keys = getupvalue(Selected, 4)
-    
-    if Playground == true then
-        return "Shotta_"
-    elseif type(Keys[1]) == "string" then
-        return Keys[1]
-    end
-    
-    return "Shotta"
-end
-
-local RemoveKeyFromKeyTable = function()
-    local StartTime = tick()
-    
-    repeat task.wait() until Player.Character == nil or Player.Character:FindFirstChild("Basketball") == nil or tick() - StartTime > 1.5
-    
-    if Player.Character == nil or tick() - StartTime > 1.5 then
-        return print("Didnt remove key")
-    end
-    
-    local Keys = getupvalue(Selected, 4)
-    
-    if type(Keys) == "table" then
-        print("Removed key")
-        table.remove(Keys, 1)
-        setupvalue(Selected, 4, Keys)
-    end
-end
-
-local GetRandomizedTable = function(TorsoPosition, ShootPosition)
-    local UnrandomizedArgs = {
-        X1 = TorsoPosition.X,
-        Y1 = TorsoPosition.Y,
-        Z1 = TorsoPosition.Z,
-        X2 = ShootPosition.X,
-        Y2 = ShootPosition.Y,
-        Z2 = ShootPosition.Z
-    }
-    
-    local RandomizedArgs = {
-        UnrandomizedArgs[Shuffled["1"]],
-        UnrandomizedArgs[Shuffled["2"]],
-        UnrandomizedArgs[Shuffled["3"]],
-        UnrandomizedArgs[Shuffled["4"]],
-        UnrandomizedArgs[Shuffled["5"]],
-        UnrandomizedArgs[Shuffled["6"]],
-    }
-    
-    return RandomizedArgs
-end
-
-local GetGoal = function()
-    if not Player.Character or not Player.Character:FindFirstChild("Torso") then
-        return nil
-    end
-    
-    local Distance, Goal = 9e9
-    
-    for _, Obj in next, Goals do
-        local Magnitude = (Player.Character.Torso.Position - Obj.Position).Magnitude
-        
-        if Distance > Magnitude then
-            Distance = Magnitude
-            Goal = Obj
-        end
-    end
-    
-    return Goal
-end
-
-local GetDistance = function()
-    local Goal = GetGoal()
-    if not Player.Character or not Player.Character:FindFirstChild("Torso") or not Goal then
-        return 0
-    end
-    
-    local TorsoPosition = Player.Character.Torso.Position
-    
-    return (TorsoPosition - Goal.Position).Magnitude
-end
-
-local GetDirection = function(Position)
-    if not Player.Character or not Player.Character:FindFirstChild("Torso") then
-        return Vector3.new(0, 1, 0)
-    end
-    
-    return (Position - Player.Character.Torso.Position).Unit
-end
-
-local GetMoveDirection = function()
-    if not Player.Character or not Player.Character:FindFirstChild("Humanoid") then
-        return Vector3.new(0, 0, 0)
-    end
-    
-    local Direction = Player.Character.Humanoid.MoveDirection * 1.8
-    
-    if UIS:IsKeyDown(Enum.KeyCode.S) == true and UIS:IsKeyDown(Enum.KeyCode.W) == true then
-        Direction = Player.Character.Humanoid.MoveDirection * 0.5
-    elseif UIS:IsKeyDown(Enum.KeyCode.S) == true and UIS:IsKeyDown(Enum.KeyCode.W) == false then
-        Direction = Player.Character.Humanoid.MoveDirection * 0.8
-    elseif UIS:IsKeyDown(Enum.KeyCode.S) == false and UIS:IsKeyDown(Enum.KeyCode.W) == true then
-        Direction = Player.Character.Humanoid.MoveDirection * 1.2
-    end
-        
-    return Direction
-end
-
-local GetBasketball = function()
-    if not Player.Character then
-        return nil
-    end
-    
-    return Player.Character:FindFirstChildOfClass("Folder")
-end
-
-local InFootingCheck = function()
-    if not Player.Character or not Player.Character:FindFirstChild("Humanoid") then
-        IsInFooting = false
-        return
-    end
-    
-    local Distance = GetDistance()
-    local Basketball = GetBasketball()
-    
-    local Power do 
-        if Basketball ~= nil then
-            Power = Basketball.PowerValue.Value
-        else
-            IsInFooting = false
-            return
-        end
-    end
-    
-    if Player.Character.Humanoid:GetState() ~= Enum.HumanoidStateType.Freefall then
-        if Power == 75 or Power == 100 then
-            Distance = Distance - 1
-        else
-            Distance = Distance - 3
-        end
-    end
-    
-    if Power == 75 then
-        if Distance > 57 and Distance < 61 then
-            IsInFooting = true
-        else
-            IsInFooting = false
-        end
-    elseif Power == 80 then
-        if Distance > 57 and Distance < 64 then
-            IsInFooting = true
-        else
-            IsInFooting = false
-        end
-    elseif Power == 85 then
-        if Distance > 57 and Distance < 70 then
-            IsInFooting = true
-        else
-            IsInFooting = false
-        end
-    elseif Power == 90 then
-        if Distance > 57 and Distance < 74 then
-            IsInFooting = true
-        else
-            IsInFooting = false
-        end
-    elseif Power == 95 then
-        if Distance > 57 and Distance < 82 then
-            IsInFooting = true
-        else
-            IsInFooting = false
-        end
-    elseif Power == 100 then
-        if Distance > 57 and Distance < 87 then
-            IsInFooting = true
-        else
-            IsInFooting = false
-        end
-    elseif Power < 75 then
-        IsInFooting = false
-    end
-end
-
-local GetArc = function()
-    local Distance = GetDistance()
-    local Basketball = GetBasketball()
-    
-    local Arc = nil
-    
-    local Power do
-        if Basketball ~= nil then
-            Power = Basketball.PowerValue.Value
-        else
-            return
-        end
-    end
-    
-    if Power == 75 then
-        if Distance > 57 and Distance < 59 then
-            Arc = 55
-        elseif Distance > 59 and Distance < 60 then
-            Arc = 50
-        elseif Distance > 60 and Distance < 61 then
-            Arc = 45
-        elseif Distance > 61 and Distance < 62 then
-            Arc = 40
-        end
-    elseif Power == 80 then
-        if Distance > 57 and Distance < 59 then
-            Arc = 75
-        elseif Distance > 59 and Distance < 63 then
-            Arc = 70
-        elseif Distance > 63 and Distance < 65 then
-            Arc = 60
-        elseif Distance > 65 and Distance < 69 then
-            Arc = 50
-        end
-    elseif Power == 85 then
-        if Distance > 57 and Distance < 63 then
-            Arc = 85
-        elseif Distance > 63 and Distance < 67 then
-            Arc = 80
-        elseif Distance > 67 and Distance < 70 then
-            Arc = 75
-        elseif Distance > 70 and Distance < 74 then
-            Arc = 60
-        end
-    elseif Power == 90 then
-        if Distance > 57 and Distance < 63 then
-            Arc = 100
-        elseif Distance > 63 and Distance < 67 then
-            Arc = 95
-        elseif Distance > 67 and Distance < 69 then
-            Arc = 90
-        elseif Distance > 69 and Distance < 74 then
-            Arc = 85
-        elseif Distance > 74 and Distance < 77 then
-            Arc = 75
-        elseif Distance > 77 and Distance < 79 then
-            Arc = 65
-        end
-    elseif Power == 95 then
-        if Distance > 57 and Distance < 58 then
-            Arc = 120
-        elseif Distance > 59 and Distance < 63 then
-            Arc = 115
-        elseif Distance > 63 and Distance < 68 then
-            Arc = 110
-        elseif Distance > 68 and Distance < 71 then
-            Arc = 105
-        elseif Distance > 71 and Distance < 74 then
-            Arc = 100
-        elseif Distance > 74 and Distance < 79 then
-            Arc = 95
-        elseif Distance > 79 and Distance < 81 then
-            Arc = 90
-        elseif Distance > 81 and Distance < 82 then
-            Arc = 65
-        elseif Distance > 82 and Distance < 86 then
-            Arc = 60
-        end
-    elseif Power == 100 then
-        if Distance > 57 and Distance < 66 then
-            Arc = 130
-        elseif Distance > 66 and Distance < 69 then
-            Arc = 125
-        elseif Distance > 69 and Distance < 74 then
-            Arc = 120
-        elseif Distance > 74 and Distance < 79 then
-            Arc = 115
-        elseif Distance > 79 and Distance < 82 then
-            Arc = 110
-        elseif Distance > 82 and Distance < 84 then
-            Arc = 105
-        elseif Distance > 84 and Distance < 88 then
-            Arc = 100
-        elseif Distance > 88 and Distance < 90 then
-            Arc = 85
-        elseif Distance > 90 and Distance < 93 then
-            Arc = 65
-        end
-    end
-    
-    if Playground == true and Arc ~= nil then
-        Arc = Arc - 5
-    end
-    
-    return Arc
-end
-
-getgenv().Shoot = function()
-    if not Player.Character or not Player.Character:FindFirstChild("Basketball") then
-        return
-    end
-    
-    local Goal = GetGoal()
-    local Arc = GetArc()
-    local MoveDirection = GetMoveDirection()
-    
-    if not Goal or not Arc then
-        return
-    end
-    
-    local Hit = (Goal.Position + Vector3.new(0, Arc, 0) + MoveDirection)
-    local Direction = GetDirection(Hit)
-    local RandomizedArgs = GetRandomizedTable(Player.Character.Torso.Position, Direction)
-    local Basketball = GetBasketball()
-    local Key = GetKeyFromKeyTable()
-    
-    if Playground == true then
-        local Clock = GetClock()
-        Key = Key .. Clock
-    end
-    
-    Clicker:FireServer(Basketball, Basketball.PowerValue.Value, RandomizedArgs, Key)
-    
-    if GetBasketball() ~= nil then
-        RemoveKeyFromKeyTable()
-    end
-end
-
-local function PerformShoot()
-    if Player.Character and Player.Character:FindFirstChild("Basketball") and IsInFooting then
-        if Player.Character.Humanoid:GetState() ~= Enum.HumanoidStateType.Freefall then
-            Player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            task.wait(0.25)
-        end
-        
-        Shoot()
-    end
-end
-
--- Keyboard input
-_G.InputBegan = UIS.InputBegan:Connect(function(Key, GPE)
-    if not GPE and Key.KeyCode == Enum.KeyCode.X and Player.Character and Player.Character:FindFirstChild("Basketball") and IsInFooting then
-        PerformShoot()
-    end
-end)
-
--- Mobile touch input
-if _G.ShootButton then
-    _G.ShootButton.MouseButton1Click:Connect(function()
-        PerformShoot()
-    end)
-    
-    _G.ShootButton.TouchTap:Connect(function()
-        PerformShoot()
-    end)
-end
-
--- Update mobile button visibility
-local function UpdateMobileButton()
-    if _G.ShootButton then
-        if IsInFooting then
-            _G.ShootButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)  -- Green when ready
-            _G.ShootButton.Text = "SHOOT READY"
-        else
-            _G.ShootButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)  -- Blue when not ready
-            _G.ShootButton.Text = "SHOOT (X)"
-        end
-    end
-end
-
-_G.Stepped = RS.Stepped:Connect(function()
-    InFootingCheck()
-    UpdateMobileButton()
-    
-    if IsInFooting then
-        HL.Enabled = true
-    else
-        HL.Enabled = false
-    end
-    
-    if HL.Adornee == nil or HL.Adornee.Parent == nil then
-        if Player.Character then
-            HL.Adornee = Player.Character
-        end
-    end
-end)
-
--- Handle device type changes
-UIS.LastInputTypeChanged:Connect(function(lastInputType)
-    if lastInputType == Enum.UserInputType.Touch then
-        -- Mobile device detected
-        if _G.TouchGui then
-            _G.TouchGui.Enabled = true
-        end
-    else
-        -- Keyboard/mouse detected
-        if _G.TouchGui then
-            _G.TouchGui.Enabled = false  -- Hide button on PC
-        end
-    end
-end)
-
--- Initial device check
-if UIS.TouchEnabled and UIS.MouseEnabled == false then
-    -- Mobile device
-    if _G.TouchGui then
-        _G.TouchGui.Enabled = true
-    end
-else
-    -- PC device
-    if _G.TouchGui then
-        _G.TouchGui.Enabled = false
-    end
-end
-
-print("Silent Aim loaded successfully! Mobile support enabled.")
-print("Press X or tap the mobile button when highlighted to shoot.")
