@@ -1,248 +1,229 @@
--- Auto FPS Booster (No UI Version)
-local Players = game:GetService("Players")
-local Lighting = game:GetService("Lighting")
-local RunService = game:GetService("RunService")
-local Terrain = workspace:FindFirstChildOfClass("Terrain")
+-- Bronx 3 Graphics Downgrader + FPS Booster
+-- Put this in your autoexec folder or execute in-game
 
-print("🚀 Auto FPS Booster Initializing...")
+local GraphicsDowngrader = {}
 
--- Store original settings for potential restoration
-local OriginalSettings = {
-    GraphicsQuality = Enum.SavedQualitySetting.QualityLevel10,
-    Shadows = Lighting.ShadowSoftness,
-    Lighting = Lighting.GlobalShadows,
-    Particles = {},
-    Effects = {},
-    Terrain = {}
-}
-
--- Apply all optimizations immediately
-function applyUltraSettings()
-    print("⚡ Applying maximum FPS optimizations...")
+-- Main downgrade function
+function GraphicsDowngrader:ApplyMaxDowngrade()
+    -- Force lowest possible graphics settings
+    settings().Rendering.QualityLevel = "Level01"
     
-    -- Set lowest graphics quality
-    settings().Rendering.QualityLevel = 1
+    -- Disable expensive visual effects
+    settings().Rendering.EagerBulkExecution = true
+    game:GetService("Lighting").GlobalShadows = false
+    game:GetService("Lighting").FogEnd = 9e9
     
-    -- Disable all shadows
-    Lighting.GlobalShadows = false
-    Lighting.ShadowSoftness = 0
-    Lighting.ShadowColor = Color3.fromRGB(178, 178, 183)
+    -- Turn off shadows completely
+    sethiddenproperty(game:GetService("Lighting"), "Technology", "Compatibility")
     
-    -- Disable lighting effects
-    Lighting.Outlines = false
-    Lighting.Brightness = 2
-    Lighting.Ambient = Color3.fromRGB(127, 127, 127)
-    Lighting.FogEnd = 1000000
-    Lighting.Bloom.Enabled = false
-    Lighting.Blur.Enabled = false
-    Lighting.SunRays.Enabled = false
-    Lighting.ColorCorrection.Enabled = false
-    Lighting.DepthOfField.Enabled = false
-    Lighting.EnvironmentDiffuseScale = 0
-    Lighting.EnvironmentSpecularScale = 0
+    -- Minimal lighting
+    local lighting = game:GetService("Lighting")
+    lighting.Brightness = 2
+    lighting.ClockTime = 12
+    lighting.GeographicLatitude = 0
+    lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
     
-    -- Remove materials if possible (Plastic uses less resources)
-    if sethiddenproperty then
-        for _, part in pairs(workspace:GetDescendants()) do
-            if part:IsA("BasePart") then
-                pcall(function()
-                    sethiddenproperty(part, "Material", Enum.Material.Plastic)
-                end)
-            end
-        end
+    -- Disable post-processing
+    lighting.Blur.Enabled = false
+    lighting.SunRays.Enabled = false
+    lighting.ColorCorrection.Enabled = false
+    lighting.DepthOfField.Enabled = false
+    
+    -- Reduce particle limits
+    settings().Rendering.MaxParticleCount = 10
+    settings().Rendering.MaxParticleTexture = 64
+    
+    -- Force low quality models
+    settings().Rendering.EagerBulkExecution = true
+    settings().Rendering.FrameRateManager = "Automatic"
+    
+    -- Reduce texture quality
+    settings().Rendering.TextureQuality = 0
+    settings().Rendering.MeshPartDetailLevel = "Low"
+    
+    -- Low quality water
+    if workspace:FindFirstChildOfClass("WaterForce") then
+        workspace:FindFirstChildOfClass("WaterForce").Enabled = false
     end
     
-    -- Disable all particles
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("ParticleEmitter") or obj:IsA("Beam") or obj:IsA("Trail") or 
-           obj:IsA("Smoke") or obj:IsA("Fire") then
-            obj.Enabled = false
-            if not OriginalSettings.Effects[obj] then
-                OriginalSettings.Effects[obj] = obj.Enabled
-            end
-        end
-    end
+    -- Reduce character quality
+    game:GetService("StarterPlayer").AllowCustomAnimations = false
     
-    -- Remove textures and decals
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            -- Remove textures
-            if obj:FindFirstChildWhichIsA("Texture") then
-                for _, texture in pairs(obj:GetChildren()) do
-                    if texture:IsA("Texture") then
-                        texture:Destroy()
-                    end
-                end
-            end
-            -- Remove decals
-            if obj:FindFirstChildWhichIsA("Decal") then
-                for _, decal in pairs(obj:GetChildren()) do
-                    if decal:IsA("Decal") then
-                        decal:Destroy()
-                    end
-                end
-            end
-        end
-    end
-    
-    -- Hide terrain
-    if Terrain then
-        Terrain.Transparency = 1
-        OriginalSettings.Terrain.Transparency = Terrain.Transparency
-    end
-    
-    -- Disable lights
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("PointLight") or obj:IsA("SurfaceLight") or obj:IsA("SpotLight") then
-            obj.Enabled = false
-        end
-    end
-    
-    -- Reduce physics quality
-    settings().Physics.ThrottleAdjustTime = 2
-    settings().Physics.AllowSleep = true
-    
-    -- Reduce render distance
-    if sethiddenproperty then
-        pcall(function()
-            sethiddenproperty(game:GetService("Workspace").CurrentCamera, "MaxAxisRenderDistance", 100)
-        end)
-    end
-    
-    -- Lower texture quality
-    if sethiddenproperty then
-        pcall(function()
-            sethiddenproperty(game, "TextureQuality", 0.1)
-        end)
-    end
-    
-    -- Disable character animations for all players
-    for _, player in pairs(Players:GetPlayers()) do
-        if player.Character then
-            local humanoid = player:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, false)
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
-            end
-        end
-    end
-    
-    -- Handle new players joining
-    Players.PlayerAdded:Connect(function(player)
-        player.CharacterAdded:Connect(function(character)
-            task.wait(1)
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, false)
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-                humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
-            end
-        end)
-    end)
-    
-    print("✅ All optimizations applied!")
+    -- Minimal sound quality
+    settings().Rendering.RenderCSGTrianglesDebug = false
 end
 
--- FPS monitoring and auto-adjustment
-local frameCount = 0
-local fps = 60
-local lastTime = tick()
-
-RunService.RenderStepped:Connect(function()
-    frameCount = frameCount + 1
-    local currentTime = tick()
-    if currentTime - lastTime >= 1 then
-        fps = math.floor(frameCount / (currentTime - lastTime))
-        frameCount = 0
-        lastTime = currentTime
-    end
-end)
-
--- Performance monitoring
-task.spawn(function()
-    while task.wait(2) do
-        -- Auto-collect garbage when memory is high
-        local mem = collectgarbage("count")
-        if mem > 10000 then -- If memory > ~10MB
-            collectgarbage("collect")
-        end
-        
-        -- Additional optimization if FPS drops below 30
-        if fps < 30 then
-            -- Clear unused sound instances
-            for _, instance in pairs(game:GetDescendants()) do
-                if instance:IsA("Sound") and not instance.Playing then
-                    instance:Destroy()
+-- Function to downgrade all existing parts
+function GraphicsDowngrader:DowngradeExistingParts()
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") then
+            -- Remove expensive materials
+            part.Material = Enum.Material.Plastic
+            part.Reflectance = 0
+            
+            -- Remove textures
+            if part:FindFirstChildWhichIsA("Texture") then
+                part:FindFirstChildWhichIsA("Texture"):Destroy()
+            end
+            
+            -- Remove decals
+            for _, decal in ipairs(part:GetChildren()) do
+                if decal:IsA("Decal") then
+                    decal:Destroy()
                 end
             end
         end
-    end
-end)
-
--- Apply optimizations on new instances
-workspace.DescendantAdded:Connect(function(descendant)
-    task.wait(0.1)
-    
-    -- Auto-disable new particles
-    if descendant:IsA("ParticleEmitter") or descendant:IsA("Beam") or descendant:IsA("Trail") or 
-       descendant:IsA("Smoke") or descendant:IsA("Fire") then
-        descendant.Enabled = false
-    end
-    
-    -- Auto-disable new lights
-    if descendant:IsA("PointLight") or descendant:IsA("SurfaceLight") or descendant:IsA("SpotLight") then
-        descendant.Enabled = false
-    end
-    
-    -- Remove textures from new parts
-    if descendant:IsA("BasePart") then
-        if sethiddenproperty then
-            pcall(function()
-                sethiddenproperty(descendant, "Material", Enum.Material.Plastic)
-            end)
+        
+        -- Downgrade particle emitters
+        if part:IsA("ParticleEmitter") then
+            part.Rate = 1
+            part.Lifetime = NumberRange.new(0.5)
+            part.Enabled = false
         end
         
-        -- Auto-remove textures/decals from new parts
-        for _, child in pairs(descendant:GetChildren()) do
-            if child:IsA("Texture") or child:IsA("Decal") then
-                child:Destroy()
+        -- Disable expensive GUIs
+        if part:IsA("SurfaceGui") or part:IsA("BillboardGui") then
+            part.Enabled = false
+        end
+    end
+end
+
+-- Function to continuously downgrade new parts
+function GraphicsDowngrader:MonitorAndDowngrade()
+    workspace.DescendantAdded:Connect(function(descendant)
+        task.wait(0.1)
+        
+        if descendant:IsA("BasePart") then
+            descendant.Material = Enum.Material.Plastic
+            descendant.Reflectance = 0
+        elseif descendant:IsA("ParticleEmitter") then
+            descendant.Enabled = false
+        elseif descendant:IsA("SurfaceGui") or descendant:IsA("BillboardGui") then
+            descendant.Enabled = false
+        end
+    end)
+end
+
+-- Ultra low poly mode (makes everything boxy)
+function GraphicsDowngrader:EnableUltraLowPolyMode()
+    for _, mesh in ipairs(workspace:GetDescendants()) do
+        if mesh:IsA("SpecialMesh") or mesh:IsA("MeshPart") then
+            -- Replace meshes with basic blocks
+            if mesh.Parent:IsA("BasePart") then
+                mesh:Destroy()
+                mesh.Parent.Shape = Enum.PartType.Block
             end
         end
     end
-end)
+end
 
--- Apply initial optimizations with delay
-task.wait(1)
-applyUltraSettings()
-
-print("🎮 FPS Booster Active!")
-print("📊 Graphics set to minimum quality")
-print("🔧 All optimizations applied automatically")
-
--- Optional: Add a simple way to restore settings (hold R key for 3 seconds)
-local restoreStartTime = nil
-game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.R and not gameProcessed then
-        restoreStartTime = tick()
-    end
-end)
-
-game:GetService("UserInputService").InputEnded:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.R and restoreStartTime then
-        local holdTime = tick() - restoreStartTime
-        if holdTime >= 3 then
-            print("🔄 Restoring original graphics settings...")
-            -- Restore basic settings (partial restore)
-            settings().Rendering.QualityLevel = OriginalSettings.GraphicsQuality
-            Lighting.GlobalShadows = OriginalSettings.Lighting
-            Lighting.ShadowSoftness = OriginalSettings.Shadows
-            Lighting.Outlines = true
-            Lighting.Brightness = 1
-            print("✅ Original settings restored (partial)")
+-- Aggressive texture compression (makes things blurry)
+function GraphicsDowngrader:EnableTextureCompression()
+    for _, texture in ipairs(workspace:GetDescendants()) do
+        if texture:IsA("Texture") or texture:IsA("Decal") then
+            -- Force smallest texture size
+            texture.Texture = "rbxassetid://0" -- Invalid texture = no texture
         end
-        restoreStartTime = nil
     end
+end
+
+-- Remove all particles
+function GraphicsDowngrader:RemoveAllParticles()
+    for _, particle in ipairs(workspace:GetDescendants()) do
+        if particle:IsA("ParticleEmitter") or particle:IsA("Trail") or particle:IsA("Beam") then
+            particle:Destroy()
+        end
+    end
+end
+
+-- Minimal audio quality
+function GraphicsDowngrader:ReduceAudioQuality()
+    for _, sound in ipairs(workspace:GetDescendants()) do
+        if sound:IsA("Sound") then
+            sound.Volume = 0.1
+            sound.PlaybackSpeed = 1
+            sound.Looped = false
+        end
+    end
+end
+
+-- Main execution
+function GraphicsDowngrader:ExecuteFullDowngrade()
+    print("[FPS BOOSTER] Applying maximum graphics downgrade...")
+    
+    -- Apply settings
+    self:ApplyMaxDowngrade()
+    
+    -- Process existing content
+    self:DowngradeExistingParts()
+    self:EnableUltraLowPolyMode()
+    self:EnableTextureCompression()
+    self:RemoveAllParticles()
+    self:ReduceAudioQuality()
+    
+    -- Start monitoring for new content
+    self:MonitorAndDowngrade()
+    
+    print("[FPS BOOSTER] Graphics have been horribly downgraded!")
+    print("[FPS BOOSTER] Your FPS should now be much higher (but everything looks terrible)")
+end
+
+-- Run the downgrader
+GraphicsDowngrader:ExecuteFullDowngrade()
+
+-- Create a simple GUI to control the downgrader
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local Status = Instance.new("TextLabel")
+local UltraMode = Instance.new("TextButton")
+
+ScreenGui.Name = "FPSExtremeBooster"
+ScreenGui.Parent = game:GetService("CoreGui")
+
+Frame.Name = "MainFrame"
+Frame.Parent = ScreenGui
+Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Frame.BorderSizePixel = 0
+Frame.Position = UDim2.new(0.8, 0, 0.1, 0)
+Frame.Size = UDim2.new(0, 200, 0, 150)
+
+Title.Name = "Title"
+Title.Parent = Frame
+Title.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "EXTREME FPS BOOSTER"
+Title.TextColor3 = Color3.fromRGB(255, 50, 50)
+Title.TextSize = 14
+
+Status.Name = "Status"
+Status.Parent = Frame
+Status.BackgroundTransparency = 1
+Status.Position = UDim2.new(0, 0, 0.2, 0)
+Status.Size = UDim2.new(1, 0, 0, 30)
+Status.Font = Enum.Font.SourceSans
+Status.Text = "Status: ACTIVE\nGraphics: HORRIBLE"
+Status.TextColor3 = Color3.fromRGB(255, 255, 255)
+Status.TextSize = 12
+
+UltraMode.Name = "UltraMode"
+UltraMode.Parent = Frame
+UltraMode.BackgroundColor3 = Color3.fromRGB(100, 50, 50)
+UltraMode.Position = UDim2.new(0.1, 0, 0.5, 0)
+UltraMode.Size = UDim2.new(0.8, 0, 0, 40)
+UltraMode.Font = Enum.Font.SourceSansBold
+UltraMode.Text = "ULTRA LOW POLY MODE"
+UltraMode.TextColor3 = Color3.fromRGB(255, 255, 255)
+UltraMode.TextSize = 12
+
+UltraMode.MouseButton1Click:Connect(function()
+    GraphicsDowngrader:EnableUltraLowPolyMode()
+    Status.Text = "Status: ULTRA MODE\nEverything is now boxes!"
 end)
+
+-- Keep downgrading periodically
+while true do
+    task.wait(5)
+    GraphicsDowngrader:DowngradeExistingParts()
+end
