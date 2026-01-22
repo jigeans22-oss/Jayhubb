@@ -72,7 +72,7 @@ local toggleButton = Instance.new("TextButton")
 toggleButton.Name = "RedlineToggle"
 toggleButton.Parent = gui
 toggleButton.Size = UDim2.new(0, 140, 0, 40)
-toggleButton.Position = UDim2.new(0, 20, 0.5, -20)
+toggleButton.Position = UDim2.new(1, -160, 0, 20)
 toggleButton.BackgroundColor3 = Color3.fromRGB(255, 105, 180) -- pink
 toggleButton.Text = "Ski Hub"
 toggleButton.TextColor3 = Color3.fromRGB(255,255,255)
@@ -91,12 +91,7 @@ local startPos
 
 local function update(input)
 	local delta = input.Position - dragStart
-	toggleButton.Position = UDim2.new(
-		startPos.X.Scale,
-		startPos.X.Offset + delta.X,
-		startPos.Y.Scale,
-		startPos.Y.Offset + delta.Y
-	)
+	toggleButton.Position = UDim2.new(1, -160, 0, 20)
 end
 
 toggleButton.InputBegan:Connect(function(input)
@@ -18413,5 +18408,33 @@ pcall(function()
                 )
             end
         end
+    end)
+end)
+
+
+-- DELTA COREGUI TOGGLE UI FORCE TOP-RIGHT
+pcall(function()
+    task.spawn(function()
+        local RunService = game:GetService("RunService")
+        local CoreGui = game:GetService("CoreGui")
+
+        local function forceMove()
+            for _, v in ipairs(CoreGui:GetDescendants()) do
+                if (v:IsA("TextButton") or v:IsA("ImageButton")) then
+                    local txt = (typeof(v.Text) == "string") and v.Text:lower() or ""
+                    if txt:find("toggle") then
+                        v.AnchorPoint = Vector2.new(1, 0)
+                        v.Position = UDim2.new(1, -20, 0, 80)
+                        v.Size = UDim2.new(0, 120, 0, 40)
+                        v.ZIndex = 9999
+                        if v.Parent and v.Parent:IsA("GuiObject") then
+                            v.Parent.ZIndexBehavior = Enum.ZIndexBehavior.Global
+                        end
+                    end
+                end
+            end
+        end
+
+        RunService.RenderStepped:Connect(forceMove)
     end)
 end)
