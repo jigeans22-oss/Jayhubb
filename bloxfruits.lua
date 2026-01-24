@@ -1,6 +1,6 @@
 if (game:GetService("CoreGui")):FindFirstChild("Wizard Hub") and (game:GetService("CoreGui")):FindFirstChild("ScreenGui") then
-	(game:GetService("CoreGui")).RTaO:Destroy();
-	(game:GetService("CoreGui")).ScreenGui:Destroy();
+	
+	
 end;
 _G.Primary = Color3.fromRGB(100, 100, 100);
 _G.Dark = Color3.fromRGB(22, 22, 26);
@@ -378,7 +378,7 @@ function Update:Window(Config)
 	NameHub.AnchorPoint = Vector2.new(0, 0.5);
 	NameHub.Size = UDim2.new(0, 1, 0, 25);
 	NameHub.Font = Enum.Font.GothamBold;
-	NameHub.Text = "RTaO";
+	NameHub.Text = "Wizard Hub";
 	NameHub.TextSize = 20;
 	NameHub.TextColor3 = Color3.fromRGB(255, 255, 255);
 	NameHub.TextXAlignment = Enum.TextXAlignment.Left;
@@ -411,7 +411,7 @@ function Update:Window(Config)
 	CloseButton.ImageColor3 = Color3.fromRGB(245, 245, 245);
 	CreateRounded(CloseButton, 3);
 	CloseButton.MouseButton1Click:connect(function()
-		(game.CoreGui:FindFirstChild("RTaO")).Enabled = not (game.CoreGui:FindFirstChild("RTaO")).Enabled;
+		local g=game:GetService("CoreGui"):FindFirstChild("Wizard Hub"); if g then g.Enabled=not g.Enabled end
 	end);
 	local ResizeButton = Instance.new("ImageButton");
 	ResizeButton.Name = "ResizeButton";
@@ -672,7 +672,7 @@ function Update:Window(Config)
 	MakeDraggable(Top, OutlineMain);
 	UserInputService.InputBegan:Connect(function(input)
 		if input.KeyCode == Enum.KeyCode.Insert then
-			(game.CoreGui:FindFirstChild("RTaO")).Enabled = not (game.CoreGui:FindFirstChild("RTaO")).Enabled;
+			local g=game:GetService("CoreGui"):FindFirstChild("Wizard Hub"); if g then g.Enabled=not g.Enabled end
 		end;
 	end);
 	local Dragging = false;
@@ -1553,7 +1553,7 @@ function Update:Window(Config)
 			Sep1.Size = UDim2.new(0, 20, 0, 36);
 			Sep1.Font = Enum.Font.GothamBold;
 			Sep1.RichText = true;
-			Sep1.Text = "âŒ©<font color=\"rgb(255, 0, 0)\">âŒ©</font>";
+			Sep1.Text = "Ã¢ÅÂ©<font color=\"rgb(255, 0, 0)\">Ã¢ÅÂ©</font>";
 			Sep1.TextColor3 = Color3.fromRGB(255, 255, 255);
 			Sep1.TextSize = 14;
 			Sep2.Name = "Sep2";
@@ -1576,7 +1576,7 @@ function Update:Window(Config)
 			Sep3.Size = UDim2.new(0, 20, 0, 36);
 			Sep3.Font = Enum.Font.GothamBold;
 			Sep3.RichText = true;
-			Sep3.Text = "<font color=\"rgb(255, 0, 0)\">âŒª</font>âŒª";
+			Sep3.Text = "<font color=\"rgb(255, 0, 0)\">Ã¢ÅÂª</font>Ã¢ÅÂª";
 			Sep3.TextColor3 = Color3.fromRGB(255, 255, 255);
 			Sep3.TextSize = 14;
 		end;
